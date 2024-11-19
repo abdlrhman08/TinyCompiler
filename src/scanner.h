@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 enum TokenType {
+    SEMICOLON,
     IF,
     THEN,
     END,

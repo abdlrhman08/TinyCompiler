@@ -2,11 +2,15 @@
 
 #include <stdio.h>
 
+int f () {
+    return 5;
+}
+
 int main()
 {
     open_compilation("main.tiny");
 
     Token tk = next_token();
 
-    printf("The current value is %lu \n", tk.num_val);
+    printf("The current value is %i \n", tk.token_type);
 }

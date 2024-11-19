@@ -9,4 +9,3 @@ crate-type = ["staticlib"]
 [profile.release]
 opt-level = 3
 
-[dependencies]

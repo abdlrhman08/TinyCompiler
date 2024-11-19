@@ -1,11 +1,15 @@
 use std::{
+    cell::LazyCell,
+    collections::HashMap,
     io::Read,
     fs::File,
     ffi::{c_char, CStr}
 };
 
 #[repr(C)]
+#[derive(Clone)]
 enum TokenType {
+    SEMICOLON,
     IF,
     THEN,
     END,
@@ -23,7 +27,7 @@ enum TokenType {
     DIV,
     OPENBRACKET,
     CLOSEDBRACKET,
-    NUMBER
+    NUMBER,
 }
 
 #[repr(C)]
@@ -50,6 +54,38 @@ impl CompilationUnit {
 
 static mut COMPILATION_UNIT: Option<CompilationUnit> = None;
 
+static mut DFA: LazyCell<HashMap<u32, HashMap<char, u32>>> = LazyCell::new(|| {
+    HashMap::from([
+        (0, HashMap::from([
+            (';', 1), ('<', 2), ('=', 3), ('+', 4), ('-', 5), ('*', 6), ('/', 7),
+            ('(', 8), (')', 9)
+        ])),
+    ])
+});
+static mut ACCEPTING: LazyCell<HashMap<u32, TokenType>> = LazyCell::new(|| {
+    HashMap::from([
+        (1, TokenType::SEMICOLON), (2, TokenType::LESSTHAN), (3, TokenType::EQUAL), (4, TokenType::PLUS),
+        (5, TokenType::MINUS), (6, TokenType::MULT), (7, TokenType::DIV), (8, TokenType::OPENBRACKET),
+        (9, TokenType::CLOSEDBRACKET)
+    ])
+});
+
+fn traverse(buffer: &str, cursor: &mut u64) -> TokenType {
+    let mut state = 0;
+    for (index, symbol) in buffer.chars().skip(*cursor as usize).enumerate() {
+        unsafe { 
+            state = DFA[&state][&symbol];
+            
+            if ACCEPTING.contains_key(&state) {
+                *cursor = (index + 1) as u64;
+                return ACCEPTING[&state].clone();
+            }
+        }
+    }
+
+    panic!("Invalid token");
+}
+
 #[no_mangle]
 pub extern "C" fn open_compilation(file_name: *const c_char) {
     if file_name.is_null() {
@@ -66,21 +102,13 @@ pub extern "C" fn open_compilation(file_name: *const c_char) {
 #[no_mangle]
 pub extern "C" fn next_token() -> Token {
     let compilation_unit = unsafe { 
-        if let Some(ref compilation_unit) = COMPILATION_UNIT {
+        if let Some(ref mut compilation_unit) = COMPILATION_UNIT {
             compilation_unit
         } else { panic!("No file opened") }
     };
 
-    let index  = compilation_unit.cursor as usize;
-    for symbol in compilation_unit.code_buffer.chars().skip(index) {
-        match symbol {
-            s => println!("{s}"),
-        }
-    }
-
-    // This is just random
     Token { 
-        token_type: TokenType::WRITE,
+        token_type: traverse(&compilation_unit.code_buffer, &mut compilation_unit.cursor),
         string_val: std::ptr::null(),
         num_val: 12
     }
