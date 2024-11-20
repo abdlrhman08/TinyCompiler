@@ -1,13 +1,12 @@
 use std::{
-    cell::LazyCell,
-    collections::HashMap,
+    collections::HashSet,
     io::Read,
     fs::File,
-    ffi::{c_char, CStr}
+    ffi::{c_char, CStr, CString}
 };
 
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum TokenType {
     SEMICOLON,
     IF,
@@ -39,42 +38,65 @@ pub struct Token {
     num_val: u64,
 }
 
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Token type {:?} ", self.token_type);
+        if self.string_val != std::ptr::null() {
+            unsafe { 
+                write!(f, "String Value '{}'", CStr::from_ptr(self.string_val).to_str().unwrap()) 
+            };
+        } else {
+            write!(f, "Number Value {}", self.num_val);
+        }
+        Ok(())
+    }
+}
+
 pub struct Tokenizer {
     input: String,
     current_pos: usize,
+    code_book: HashSet<CString>
 }
 
 impl Tokenizer {
     pub fn new(input: String) -> Self {
+        let mut code_book = HashSet::new();
+
+        // to make this safe and prevent null pointer due to re-allocation
+        // the map is reserved with the worst case scenario of every token
+        // being a different token, map is used instead of vector to make look ups
+        // happen in O(1)
+        code_book.reserve(input.split_whitespace().count());
         Tokenizer {
             input,
             current_pos: 0,
+            code_book
         }
-    }
-
-    fn is_whitespace(ch: char) -> bool {
-        ch.is_whitespace()
-    }
-
-    fn is_digit(ch: char) -> bool {
-        ch.is_digit(10)
-    }
-
-    fn is_letter(ch: char) -> bool {
-        ch.is_alphabetic()
     }
 
     fn skip_whitespace(&mut self) {
         while self.current_pos < self.input.len() && 
-              Self::is_whitespace(self.input.chars().nth(self.current_pos).unwrap()) {
+              self.input.chars().nth(self.current_pos).unwrap().is_whitespace() {
             self.current_pos += 1;
         }
     }
 
+    fn skip_comments(&mut self) {
+        if self.current_pos < self.input.len() && 
+            self.input.chars().nth(self.current_pos).unwrap() == '{'
+        {
+            while self.input.chars().nth(self.current_pos).unwrap() != '}' {
+                self.current_pos += 1;
+            }
+            self.current_pos += 1;
+        }
+    }
+
+
     fn tokenize_number(&mut self) -> Option<Token> {
         let start = self.current_pos;
         while self.current_pos < self.input.len() && 
-              Self::is_digit(self.input.chars().nth(self.current_pos).unwrap()) {
+              self.input.chars().nth(self.current_pos).unwrap().is_digit(10) {
             self.current_pos += 1;
         }
         
@@ -92,7 +114,7 @@ impl Tokenizer {
     fn tokenize_identifier(&mut self) -> Option<Token> {
         let start = self.current_pos;
         while self.current_pos < self.input.len() && 
-              Self::is_letter(self.input.chars().nth(self.current_pos).unwrap())
+              self.input.chars().nth(self.current_pos).unwrap().is_alphabetic()
             {
             self.current_pos += 1;
         }
@@ -110,10 +132,19 @@ impl Tokenizer {
                 "write" => TokenType::WRITE,
                 _ => TokenType::IDENTIFIER,
             };
+            
+            let cstr_conversion = CString::new(id_str).unwrap();
+            let val_address = if let None = self.code_book.get(&cstr_conversion) {
+                let sorry_for_redundancy = cstr_conversion.clone();
+                self.code_book.insert(cstr_conversion);
+                self.code_book.get(&sorry_for_redundancy).unwrap().as_ptr() as *const c_char
+            } else {
+                self.code_book.get(&cstr_conversion).unwrap().as_ptr() as *const c_char
+            };
 
             return Some(Token {
                 token_type,
-                string_val: std::ptr::null(),
+                string_val: val_address,
                 num_val: 0,
             });
         }
@@ -121,6 +152,7 @@ impl Tokenizer {
     }
 
     fn tokenize_symbol(&mut self) -> Option<Token> {
+        let start = self.current_pos;
         if self.current_pos >= self.input.len() {
             return None;
         }
@@ -149,11 +181,20 @@ impl Tokenizer {
             }
             _ => TokenType::UNKNOWN,
         };
-
         self.current_pos += 1;
+        
+        let cstr_conversion = CString::new(&self.input[start..self.current_pos]).unwrap();
+        let val_address = if let None = self.code_book.get(&cstr_conversion) {
+            let sorry_for_redundancy = cstr_conversion.clone();
+            self.code_book.insert(cstr_conversion);
+            self.code_book.get(&sorry_for_redundancy).unwrap().as_ptr() as *const c_char
+        } else {
+            self.code_book.get(&cstr_conversion).unwrap().as_ptr() as *const c_char
+        };
+
         Some(Token {
             token_type,
-            string_val: std::ptr::null(),
+            string_val: val_address,
             num_val: 0,
         })
     }
@@ -162,6 +203,8 @@ impl Tokenizer {
         let mut tokens = Vec::new();
 
         while self.current_pos < self.input.len() {
+            self.skip_whitespace();
+            self.skip_comments();
             self.skip_whitespace();
 
             if self.current_pos >= self.input.len() {
@@ -184,7 +227,7 @@ impl Tokenizer {
 }
 
 pub struct CompilationUnit {
-    tokens: Vec<String>,
+    identified_tokens: usize,
     tokenizer: Option<Tokenizer>,
 }
 
@@ -195,7 +238,7 @@ impl CompilationUnit {
         file.read_to_string(&mut code_buffer).expect("Unable to read file");
         
         CompilationUnit { 
-            tokens: code_buffer.split_whitespace().map(String::from).collect(),
+            identified_tokens: 0,
             tokenizer: Some(Tokenizer::new(code_buffer)),
         }
     }
@@ -231,6 +274,8 @@ pub extern "C" fn tokenize() -> *mut Token {
     };
     
     let tokens = compilation_unit.tokenize();
+    compilation_unit.identified_tokens = tokens.len();
+
     let token_array = tokens.into_boxed_slice();
     let token_ptr = token_array.as_ptr() as *mut Token;
     std::mem::forget(token_array);
@@ -244,7 +289,11 @@ pub extern "C" fn get_token_count() -> usize {
         COMPILATION_UNIT
             .as_ref()
             .expect("No file opened")
-            .tokens
-            .len()
+            .identified_tokens
     }
+}
+
+#[no_mangle]
+pub extern "C" fn print_token(token: *mut Token) {
+    unsafe { println!("{}", *token) };
 }

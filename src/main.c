@@ -2,19 +2,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main() {
-    open_compilation("main.tiny");
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        printf("No tiny file given \n");
+        printf("Usage: TinyCompiler [*.tiny]\n");
+        return 1;
+    }
 
+    open_compilation(argv[1]);
     Token* tokens = tokenize();
     size_t token_count = get_token_count();
 
-    printf("Tokens:\n");
+    printf("Tokens: %zu\n", token_count);
     for (size_t i = 0; i < token_count; i++) {
-        Token tk = tokens[i];
-        printf("Token %zu: type = %i, string_val = %s, num_Val = %llu\n", i, tk.token_type, tk.string_val, tk.num_val);
+        print_token(&tokens[i]);
     }
 
     free(tokens);
-
     return 0;
 }
