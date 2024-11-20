@@ -45,9 +45,11 @@ typedef struct Token Token;
 extern "C" {
 #endif
 void open_compilation(const char* file_name);
-Token* tokenize();
-size_t get_token_count();
+void print_token(Token* token);
 
+Token* tokenize();
+
+size_t get_token_count();
 #ifdef __cplusplus
 }
 #endif
