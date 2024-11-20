@@ -26,11 +26,15 @@ enum TokenType {
 typedef enum TokenType TokenType;
 #endif
 
-struct Token {
-    TokenType token_type;
-    char* string_val;
-    uint64_t num_val;
-};
+#include <stddef.h> 
+
+typedef struct Token {
+    int token_type;
+    const char* string_val;
+    unsigned long long num_val;
+} Token;
+
+
 
 #ifndef __cplusplus
 typedef struct Token Token;
@@ -40,9 +44,10 @@ typedef struct Token Token;
 #ifdef __cplusplus
 extern "C" {
 #endif
-void* open_compilation(const char* file_name);
+void open_compilation(const char* file_name);
+Token* tokenize();
+size_t get_token_count();
 
-Token next_token();
 #ifdef __cplusplus
 }
 #endif

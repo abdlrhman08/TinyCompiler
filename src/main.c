@@ -1,16 +1,20 @@
 #include "scanner.h"
-
 #include <stdio.h>
+#include <stdlib.h>
 
-int f () {
-    return 5;
-}
-
-int main()
-{
+int main() {
     open_compilation("main.tiny");
 
-    Token tk = next_token();
+    Token* tokens = tokenize();
+    size_t token_count = get_token_count();
 
-    printf("The current value is %i \n", tk.token_type);
+    printf("Tokens:\n");
+    for (size_t i = 0; i < token_count; i++) {
+        Token tk = tokens[i];
+        printf("Token %zu: type = %i, string_val = %s, num_Val = %llu\n", i, tk.token_type, tk.string_val, tk.num_val);
+    }
+
+    free(tokens);
+
+    return 0;
 }
