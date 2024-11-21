@@ -9,7 +9,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    open_compilation(argv[1]);
+    if (open_compilation(argv[1]) !=  0) {
+        print_error();
+        return 1;
+    }
     Token* tokens = tokenize();
     size_t token_count = get_token_count();
 

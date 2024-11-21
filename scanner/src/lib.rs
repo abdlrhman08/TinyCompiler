@@ -232,15 +232,24 @@ pub struct CompilationUnit {
 }
 
 impl CompilationUnit {
-    fn open(file_name: &str) -> Self {
-        let mut file = File::open(file_name).expect("Unable to open the file");
+    fn open(file_name: &str) -> Result<Self, &str> {
+        let file = File::open(file_name);
         let mut code_buffer = String::new();
-        file.read_to_string(&mut code_buffer).expect("Unable to read file");
-        
-        CompilationUnit { 
+        if let Ok(mut file) = file {
+            if let Err(_) = file.read_to_string(&mut code_buffer) {
+                return Err("Error reading the file")
+            }
+            if !code_buffer.is_ascii() {
+                return Err("Compilation unit has non-ascii characters, can not compile");
+            }
+        } else {
+            return Err("Error opening the file");
+        }
+
+        Ok(CompilationUnit { 
             identified_tokens: 0,
             tokenizer: Some(Tokenizer::new(code_buffer)),
-        }
+        })
     }
 
     fn tokenize(&mut self) -> Vec<Token> {
@@ -252,17 +261,27 @@ impl CompilationUnit {
 }
 
 static mut COMPILATION_UNIT: Option<CompilationUnit> = None;
+static mut ERROR_STRING: Option<&str> = None;
 
 #[no_mangle]
-pub extern "C" fn open_compilation(file_name: *const c_char) {
+pub extern "C" fn open_compilation(file_name: *const c_char) -> u8 {
     if file_name.is_null() {
         panic!("No file given");
     }
-    
+
     unsafe {
         let file_name = CStr::from_ptr(file_name).to_str().unwrap();
-        if COMPILATION_UNIT.is_none() {
-            COMPILATION_UNIT = Some(CompilationUnit::open(file_name));
+        match CompilationUnit::open(file_name) {
+            Err(e) => {
+                ERROR_STRING = Some(e);
+                1
+            }
+            Ok(c) => {
+                if COMPILATION_UNIT.is_none() {
+                    COMPILATION_UNIT = Some(c);
+                };
+                0
+            }
         }
     }
 }
@@ -296,4 +315,15 @@ pub extern "C" fn get_token_count() -> usize {
 #[no_mangle]
 pub extern "C" fn print_token(token: *mut Token) {
     unsafe { println!("{}", *token) };
+}
+
+
+#[no_mangle]
+pub extern "C" fn print_error() {
+    unsafe {
+        match ERROR_STRING {
+            Some(err) => println!("Error: {}", err),
+            None => println!("No error occured")
+        }
+    }
 }
