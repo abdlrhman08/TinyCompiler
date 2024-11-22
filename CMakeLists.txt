@@ -9,7 +9,10 @@ FetchContent_Declare(
 )
 # Set any global configuration variables such as `Rust_TOOLCHAIN` before this line!
 FetchContent_MakeAvailable(Corrosion)
-corrosion_import_crate(MANIFEST_PATH scanner/Cargo.toml)
+corrosion_import_crate(
+    MANIFEST_PATH scanner/Cargo.toml
+    PROFILE release
+)
 
 project(TinyCompiler)
 add_executable(TinyCompiler src/main.c)
