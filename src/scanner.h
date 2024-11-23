@@ -20,7 +20,8 @@ enum TokenType {
     OPENBRACKET,
     CLOSEDBRACKET,
     NUMBER,
-    UNKNOWN
+    UNKNOWN,
+    ELSE,
 };
 
 #ifndef __cplusplus
