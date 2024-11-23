@@ -19,7 +19,8 @@ enum TokenType {
     DIV,
     OPENBRACKET,
     CLOSEDBRACKET,
-    NUMBER
+    NUMBER,
+    UNKNOWN
 };
 
 #ifndef __cplusplus
@@ -28,18 +29,15 @@ typedef enum TokenType TokenType;
 
 #include <stddef.h> 
 
-typedef struct Token {
-    int token_type;
+struct Token {
+    TokenType token_type;
     const char* string_val;
     unsigned long long num_val;
-} Token;
-
-
+};
 
 #ifndef __cplusplus
 typedef struct Token Token;
 #endif
-
 
 #ifdef __cplusplus
 extern "C" {
