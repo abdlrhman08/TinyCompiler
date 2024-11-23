@@ -284,23 +284,27 @@ impl CompilationUnit {
         })
     }
 
-    fn tokenize(&mut self) -> Vec<Token> {
-        match self.tokenizer
+    fn tokenize(&mut self) {
+        let tokens = self.tokenizer
             .as_mut()
             .expect("Tokenizer not initialized")
-            .tokenize()
-        {
-            Ok(tokens) => tokens,
-            Err(err) => {
-                eprintln!("Error during tokenization: {:?}", err);
-                Vec::new()
+            .tokenize();
+        
+        match tokens {
+            Ok(tokens) => {
+                self.identified_tokens = tokens.len();
+                unsafe { TOKENS = Some(tokens.into_boxed_slice())};
+            },
+            Err(e) => {
+                unsafe { ERROR_STRING = Some(format!("Error during tokenization: {:?}", e))}
             }
         }
     }
 }
 
 static mut COMPILATION_UNIT: Option<CompilationUnit> = None;
-static mut ERROR_STRING: Option<&str> = None;
+static mut ERROR_STRING: Option<String> = None;
+static mut TOKENS: Option<Box<[Token]>> = None;
 
 #[no_mangle]
 pub extern "C" fn open_compilation(file_name: *const c_char) -> u8 {
@@ -312,7 +316,7 @@ pub extern "C" fn open_compilation(file_name: *const c_char) -> u8 {
         let file_name = CStr::from_ptr(file_name).to_str().unwrap();
         match CompilationUnit::open(file_name) {
             Err(e) => {
-                ERROR_STRING = Some(e);
+                ERROR_STRING = Some(e.to_string());
                 1
             }
             Ok(c) => {
@@ -326,19 +330,15 @@ pub extern "C" fn open_compilation(file_name: *const c_char) -> u8 {
 }
 
 #[no_mangle]
-pub extern "C" fn tokenize() -> *mut Token {
-    let compilation_unit = unsafe {
-        COMPILATION_UNIT.as_mut().expect("No file opened")
-    };
-    
-    let tokens = compilation_unit.tokenize();
-    compilation_unit.identified_tokens = tokens.len();
-
-    let token_array = tokens.into_boxed_slice();
-    let token_ptr = token_array.as_ptr() as *mut Token;
-    std::mem::forget(token_array);
-    
-    token_ptr
+pub extern "C" fn tokenize() -> *const Token {
+    unsafe {
+        let compilation_unit = COMPILATION_UNIT.as_mut().expect("No file opened");
+        compilation_unit.tokenize();
+        if let Some(ref tokens) = TOKENS {
+            return tokens.as_ptr();
+        }
+    }
+    std::ptr::null()
 }
 
 #[no_mangle]
@@ -361,7 +361,7 @@ pub extern "C" fn print_token(token: *mut Token) {
 pub extern "C" fn print_error() {
     unsafe {
         match ERROR_STRING {
-            Some(err) => println!("Error: {}", err),
+            Some(ref err) => println!("Error: {}", err),
             None => println!("No error occured")
         }
     }
