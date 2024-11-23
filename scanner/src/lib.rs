@@ -58,14 +58,15 @@ pub struct Tokenizer {
     code_book: HashSet<CString>
 }
 
+#[derive(Debug)]
+pub enum TokenizerError {
+    InvalidIdentifier(String),
+    UnknownToken(char),
+}
+
 impl Tokenizer {
     pub fn new(input: String) -> Self {
         let mut code_book = HashSet::new();
-
-        // to make this safe and prevent null pointer due to re-allocation
-        // the map is reserved with the worst case scenario of every token
-        // being a different token, map is used instead of vector to make look ups
-        // happen in O(1)
         code_book.reserve(input.split_whitespace().count());
         Tokenizer {
             input,
@@ -85,43 +86,73 @@ impl Tokenizer {
         if self.current_pos < self.input.len() && 
             self.input.chars().nth(self.current_pos).unwrap() == '{'
         {
-            while self.input.chars().nth(self.current_pos).unwrap() != '}' {
+            while self.current_pos < self.input.len() && 
+                  self.input.chars().nth(self.current_pos).unwrap() != '}' {
                 self.current_pos += 1;
             }
-            self.current_pos += 1;
+            if self.current_pos < self.input.len() {
+                self.current_pos += 1;
+            }
         }
     }
 
-
-    fn tokenize_number(&mut self) -> Option<Token> {
+    fn tokenize_number(&mut self) -> Result<Option<Token>, TokenizerError> {
         let start = self.current_pos;
         while self.current_pos < self.input.len() && 
               self.input.chars().nth(self.current_pos).unwrap().is_digit(10) {
             self.current_pos += 1;
         }
         
-        if start != self.current_pos {
+        // Check if the number is immediately followed by letters
+        if start != self.current_pos {    
+            if self.current_pos < self.input.len() {
+                let next_char = self.input.chars().nth(self.current_pos).unwrap();
+                if next_char.is_alphabetic() {
+                    let invalid_token = &self.input[start..];
+                    let end = invalid_token.find(|c: char| !c.is_alphanumeric())
+                        .unwrap_or(invalid_token.len());
+                    return Err(TokenizerError::InvalidIdentifier(
+                        invalid_token[..end].to_string()
+                    ));
+                }
+            }
+
             let num_str = &self.input[start..self.current_pos];
-            return Some(Token {
+            return Ok(Some(Token {
                 token_type: TokenType::NUMBER,
                 string_val: std::ptr::null(),
                 num_val: num_str.parse().unwrap_or(0),
-            });
+            }));
         }
-        None
+        Ok(None)
     }
 
-    fn tokenize_identifier(&mut self) -> Option<Token> {
+    fn tokenize_identifier(&mut self) -> Result<Option<Token>, TokenizerError> {
         let start = self.current_pos;
-        while self.current_pos < self.input.len() && 
-              self.input.chars().nth(self.current_pos).unwrap().is_alphabetic()
-            {
-            self.current_pos += 1;
-        }
         
-        if start != self.current_pos {
-            let id_str = &self.input[start..self.current_pos];
+        if self.current_pos < self.input.len() && 
+           !self.input.chars().nth(self.current_pos).unwrap().is_alphabetic() {
+            return Ok(None);
+        }
+
+        let mut end_pos = self.current_pos;
+        while end_pos < self.input.len() {
+            let ch = self.input.chars().nth(end_pos).unwrap();
+            if !ch.is_alphabetic() && !ch.is_digit(10) {
+                break;
+            }
+            end_pos += 1;
+        }
+
+        if start != end_pos {
+            let id_str = &self.input[start..end_pos];
             
+            // Check if identifier contains numbers in the middle
+            let has_digits = id_str.chars().any(|c| c.is_digit(10));
+            if has_digits {
+                return Err(TokenizerError::InvalidIdentifier(id_str.to_string()));
+            }
+
             let token_type = match id_str {
                 "if" => TokenType::IF,
                 "then" => TokenType::THEN,
@@ -142,21 +173,22 @@ impl Tokenizer {
                 self.code_book.get(&cstr_conversion).unwrap().as_ptr() as *const c_char
             };
 
-            return Some(Token {
+            self.current_pos = end_pos;
+            return Ok(Some(Token {
                 token_type,
                 string_val: val_address,
                 num_val: 0,
-            });
+            }));
         }
-        None
+        Ok(None)
     }
 
-    fn tokenize_symbol(&mut self) -> Option<Token> {
-        let start = self.current_pos;
+    fn tokenize_symbol(&mut self) -> Result<Option<Token>, TokenizerError> {
         if self.current_pos >= self.input.len() {
-            return None;
+            return Ok(None);
         }
 
+        let start = self.current_pos;
         let ch = self.input.chars().nth(self.current_pos).unwrap();
         let token_type = match ch {
             ';' => TokenType::SEMICOLON,
@@ -170,16 +202,15 @@ impl Tokenizer {
             '(' => TokenType::OPENBRACKET,
             ')' => TokenType::CLOSEDBRACKET,
             ':' => {
-                // Check for ':='
                 if self.current_pos + 1 < self.input.len() && 
                    self.input.chars().nth(self.current_pos + 1).unwrap() == '=' {
                     self.current_pos += 1;
                     TokenType::ASSIGN
                 } else {
-                    TokenType::UNKNOWN
+                    return Err(TokenizerError::UnknownToken(ch));
                 }
             }
-            _ => TokenType::UNKNOWN,
+            _ => return Err(TokenizerError::UnknownToken(ch)),
         };
         self.current_pos += 1;
         
@@ -192,14 +223,14 @@ impl Tokenizer {
             self.code_book.get(&cstr_conversion).unwrap().as_ptr() as *const c_char
         };
 
-        Some(Token {
+        Ok(Some(Token {
             token_type,
             string_val: val_address,
             num_val: 0,
-        })
+        }))
     }
 
-    pub fn tokenize(&mut self) -> Vec<Token> {
+    pub fn tokenize(&mut self) -> Result<Vec<Token>, TokenizerError> {
         let mut tokens = Vec::new();
 
         while self.current_pos < self.input.len() {
@@ -211,18 +242,19 @@ impl Tokenizer {
                 break;
             }
 
-            if let Some(token) = self.tokenize_number() {
+            if let Some(token) = self.tokenize_number()? {
                 tokens.push(token);
-            } else if let Some(token) = self.tokenize_identifier() {
+            } else if let Some(token) = self.tokenize_identifier()? {
                 tokens.push(token);
-            } else if let Some(token) = self.tokenize_symbol() {
+            } else if let Some(token) = self.tokenize_symbol()? {
                 tokens.push(token);
             } else {
-                self.current_pos += 1;
+                let ch = self.input.chars().nth(self.current_pos).unwrap();
+                return Err(TokenizerError::UnknownToken(ch));
             }
         }
 
-        tokens
+        Ok(tokens)
     }
 }
 
@@ -253,10 +285,17 @@ impl CompilationUnit {
     }
 
     fn tokenize(&mut self) -> Vec<Token> {
-        self.tokenizer
+        match self.tokenizer
             .as_mut()
             .expect("Tokenizer not initialized")
             .tokenize()
+        {
+            Ok(tokens) => tokens,
+            Err(err) => {
+                eprintln!("Error during tokenization: {:?}", err);
+                Vec::new()
+            }
+        }
     }
 }
 
