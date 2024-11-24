@@ -34,7 +34,6 @@ enum TokenType {
     NUMBER,
     UNKNOWN,
     ELSE,
-    EOF_TOKENS
 };
 
 struct Token {
