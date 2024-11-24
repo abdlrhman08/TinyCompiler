@@ -21,6 +21,7 @@ enum TokenType {
     CLOSEDBRACKET,
     NUMBER,
     UNKNOWN,
+    ELSE,
 };
 
 #ifndef __cplusplus

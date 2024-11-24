@@ -9,39 +9,9 @@
 #include <vector>
 #include <map>
 #include <iostream>
-//#include "scanner.h"
+#include "../src/scanner.h"
 
 using namespace std;
-enum TokenType {
-    SEMICOLON,
-    IF,
-    THEN,
-    END,
-    REPEAT,
-    UNTIL,
-    IDENTIFIER,
-    ASSIGN,
-    READ,
-    WRITE,
-    LESSTHAN,
-    EQUAL,
-    PLUS,
-    MINUS,
-    MULT,
-    DIV,
-    OPENBRACKET,
-    CLOSEDBRACKET,
-    NUMBER,
-    UNKNOWN,
-    ELSE,
-};
-
-struct Token {
-    TokenType token_type;
-    const char* string_val;
-    unsigned long long num_val;
-};
-
 
 class Node {
 public:

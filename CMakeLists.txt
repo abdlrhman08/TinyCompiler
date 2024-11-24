@@ -15,5 +15,5 @@ corrosion_import_crate(
 )
 
 project(TinyCompiler)
-add_executable(TinyCompiler src/main.c parser/parser.cpp parser/parser.hpp)
+add_executable(TinyCompiler src/main.c parser/parser.cpp parser/parser.hpp scanner/scanner.cpp scanner/scanner.h)
 target_link_libraries(TinyCompiler scanner)
