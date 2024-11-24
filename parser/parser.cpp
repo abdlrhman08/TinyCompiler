@@ -274,26 +274,3 @@ void Parser::printParseTree(Node* node, int depth) {
         printParseTree(node->sibling, depth);
     }
 }
-
-int main(int argc, char** argv) {
-    // use static data token to test parser
-    vector<Token> tokens = {
-        {TokenType::IF, "if", 0},
-        {TokenType::IDENTIFIER, "a", 0},
-        {TokenType::LESSTHAN, "<", 0},
-        {TokenType::NUMBER, "5", 5},
-        {TokenType::THEN, "then", 0},
-        {TokenType::IDENTIFIER, "b", 0},
-        {TokenType::ASSIGN, ":=", 0},
-        {TokenType::NUMBER, "1", 1},
-        {TokenType::SEMICOLON, ";", 0},
-        {TokenType::END, "end", 0},
-    };
-    Parser parser;
-    parser.setTokensList(tokens);
-    parser.run();
-    parser.outputTables();
-    parser.printParseTree(parser.parse_tree);
-    parser.clearTables();
-    return 0;
-}
