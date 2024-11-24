@@ -9,9 +9,39 @@
 #include <vector>
 #include <map>
 #include <iostream>
-#include "scanner.h"
+//#include "scanner.h"
 
 using namespace std;
+enum TokenType {
+    SEMICOLON,
+    IF,
+    THEN,
+    END,
+    REPEAT,
+    UNTIL,
+    IDENTIFIER,
+    ASSIGN,
+    READ,
+    WRITE,
+    LESSTHAN,
+    EQUAL,
+    PLUS,
+    MINUS,
+    MULT,
+    DIV,
+    OPENBRACKET,
+    CLOSEDBRACKET,
+    NUMBER,
+    UNKNOWN,
+    ELSE,
+    EOF_TOKENS
+};
+
+struct Token {
+    TokenType token_type;
+    const char* string_val;
+    unsigned long long num_val;
+};
 
 
 class Node {
@@ -59,6 +89,9 @@ public:
     void createEdgesTable(Node* node = nullptr);
     void run();
     void clearTables();
+    void printTables();
+    void printParseTree(Node* node, int depth = 0);
+    void outputTables();
 };
 
 
