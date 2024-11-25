@@ -4,8 +4,10 @@
 
 #include "parser.hpp"
 
+#include <utility>
+
 // Node Implementation
-Node::Node(string t, string c, string s) : token_value(t), code_value(c), shape(s) {}
+Node::Node(string t, string c, string s) : token_value(std::move(t)), code_value(std::move(c)), shape(std::move(s)) {}
 
 void Node::setChildren(std::vector<Node*> y) {
     children.insert(children.end(), y.begin(), y.end());
@@ -189,25 +191,33 @@ Node* Parser::ifStmt() {
 
     Node* ifNode = new Node("ifStmt", "", "rectangle");
 
-    match(TokenType::IF); // Match 'if' token
-    Node* condition = exp(); // Parse the condition
+    match(TokenType::IF);
+    Node* condition = exp();
 
-    match(TokenType::THEN); // Match 'then' token
-    Node* stmtSeq = stmtSequence(); // Parse the statement sequence inside 'if'
+    match(TokenType::THEN);
+    Node* stmtSeq = stmtSequence();
+
+    vector<Node*> children = {condition, stmtSeq};
+
+    if (token.token_type == TokenType::ELSE) {
+        match(TokenType::ELSE);
+        Node* elseStmtSeq = stmtSequence();
+        children.push_back(elseStmtSeq);
+    }
 
     if (token.token_type == TokenType::END) {
-        match(TokenType::END); // Match 'end' token to conclude the block
+        match(TokenType::END);
     } else {
         cerr << "Syntax Error: Expected 'END' after if statement." << endl;
     }
 
-    // Setting children
-    vector<Node*> children = {condition, stmtSeq};
+    // Set children
     ifNode->setChildren(children);
 
     cout << "Exiting ifStmt()" << endl;
     return ifNode;
 }
+
 
 
 Node* Parser::repeatStmt() {
@@ -299,9 +309,6 @@ void Parser::createEdgesTable(Node* node) {
 void Parser::run() {
     cout << "Running parser..." << endl; // Debugging statement
     parse_tree = stmtSequence();
-    //print parse tree
-    cout << "Parse tree:" << endl;
-    printParseTree(parse_tree, 0);
     createNodesTable(parse_tree);
     createEdgesTable(parse_tree);
     cout << "Finished parsing" << endl; // Debugging statement
@@ -342,14 +349,32 @@ void Parser::printParseTree(Node* node, int depth) {
 
 int main(int argc, char** argv) {
     // use static data token to test parser
-    vector<Token> tokens = {{TokenType::IF, "if", 0},
+    const vector<Token> tokens = {
+        {TokenType::IF, "if", 0},
         {TokenType::IDENTIFIER, "a", 0},
         {TokenType::LESSTHAN, "<", 0},
-        {TokenType::NUMBER, "5", 5},
+        {TokenType::NUMBER, "10", 10},
         {TokenType::THEN, "then", 0},
         {TokenType::IDENTIFIER, "b", 0},
         {TokenType::ASSIGN, ":=", 0},
         {TokenType::NUMBER, "1", 1},
+        {TokenType::SEMICOLON, ";", 0},
+        {TokenType::IF, "if", 0},
+        {TokenType::IDENTIFIER, "c", 0},
+        {TokenType::LESSTHAN, "<", 0},
+        {TokenType::NUMBER, "20", 20},
+        {TokenType::THEN, "then", 0},
+        {TokenType::IDENTIFIER, "d", 0},
+        {TokenType::ASSIGN, ":=", 0},
+        {TokenType::IDENTIFIER, "b", 0},
+        {TokenType::PLUS, "+", 0},
+        {TokenType::NUMBER, "2", 2},
+        {TokenType::SEMICOLON, ";", 0},
+        {TokenType::END, "end", 0},
+        {TokenType::ELSE, "else", 0},
+        {TokenType::IDENTIFIER, "d", 0},
+        {TokenType::ASSIGN, ":=", 0},
+        {TokenType::NUMBER, "0", 0},
         {TokenType::SEMICOLON, ";", 0},
         {TokenType::END, "end", 0},
     };

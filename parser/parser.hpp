@@ -58,7 +58,6 @@ public:
     void createEdgesTable(Node* node = nullptr);
     void run();
     void clearTables();
-    void printTables();
     void printParseTree(Node* node, int depth = 0);
     void outputTables();
 };

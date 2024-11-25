@@ -149,13 +149,21 @@ Node* Parser::ifStmt() {
     match(TokenType::THEN);
     Node* stmtSeq = stmtSequence();
 
+    vector<Node*> children = {condition, stmtSeq};
+
+    if (token.token_type == TokenType::ELSE) {
+        match(TokenType::ELSE);
+        Node* elseStmtSeq = stmtSequence();
+        children.push_back(elseStmtSeq);
+    }
+
     if (token.token_type == TokenType::END) {
         match(TokenType::END);
     } else {
         cerr << "Syntax Error: Expected 'END' after if statement." << endl;
     }
 
-    vector<Node*> children = {condition, stmtSeq};
+    // Set children
     ifNode->setChildren(children);
 
     return ifNode;
