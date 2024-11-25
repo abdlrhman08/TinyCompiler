@@ -37,7 +37,7 @@ public:
     vector<pair<int, int>> edges_table;
     vector<pair<int, int>> same_rank_nodes;
 
-    Token token;
+    Token token{};
 
     Parser();
     void setTokensList(vector<Token> tokens);

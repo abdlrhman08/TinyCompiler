@@ -18,10 +18,10 @@ void Node::setSibling(Node* y) {
 }
 
 // Parser Implementation
-Parser::Parser() {}
+Parser::Parser() = default;
 
 void Parser::setTokensList(vector<Token> tokens) {
-    tokens_list = tokens;
+    tokens_list = std::move(tokens);
     tmp_index = 0;
     if (!tokens_list.empty()) {
         token = tokens_list[tmp_index];
@@ -297,11 +297,11 @@ void Parser::createEdgesTable(Node* node) {
         node = parse_tree;
     }
     for (auto child : node->children) {
-        edges_table.push_back({node->index, child->index});
+        edges_table.emplace_back(node->index, child->index);
         createEdgesTable(child);
     }
     if (node->sibling != nullptr) {
-        edges_table.push_back({node->index, node->sibling->index});
+        edges_table.emplace_back(node->index, node->sibling->index);
         createEdgesTable(node->sibling);
     }
 }
