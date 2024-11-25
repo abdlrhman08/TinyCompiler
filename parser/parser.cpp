@@ -4,8 +4,10 @@
 
 #include "parser.hpp"
 
+#include <utility>
+
 // Node Implementation
-Node::Node(string t, string c, string s) : token_value(t), code_value(c), shape(s) {}
+Node::Node(string t, string c, string s) : token_value(std::move(t)), code_value(std::move(c)), shape(std::move(s)) {}
 
 void Node::setChildren(std::vector<Node*> y) {
     children.insert(children.end(), y.begin(), y.end());
@@ -16,7 +18,7 @@ void Node::setSibling(Node* y) {
 }
 
 // Parser Implementation
-Parser::Parser() {}
+Parser::Parser() = default;
 
 void Parser::setTokensList(vector<Token> tokens) {
     tokens_list = tokens;
@@ -235,11 +237,11 @@ void Parser::createEdgesTable(Node* node) {
         node = parse_tree;
     }
     for (auto child : node->children) {
-        edges_table.push_back({node->index, child->index});
+        edges_table.emplace_back(node->index, child->index);
         createEdgesTable(child);
     }
     if (node->sibling != nullptr) {
-        edges_table.push_back({node->index, node->sibling->index});
+        edges_table.emplace_back(node->index, node->sibling->index);
         createEdgesTable(node->sibling);
     }
 }
