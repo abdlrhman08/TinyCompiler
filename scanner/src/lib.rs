@@ -29,6 +29,7 @@ pub enum TokenType {
     CLOSEDBRACKET,
     NUMBER,
     UNKNOWN,
+    ELSE,
 }
 
 #[repr(C)]
