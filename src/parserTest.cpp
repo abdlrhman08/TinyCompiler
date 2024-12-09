@@ -32,12 +32,16 @@ bool Parser::nextToken() {
     if (tmp_index < tokens_list.size() - 1) {
         tmp_index++;
         token = tokens_list[tmp_index];
+        cout << "Next token: " << token.string_val << endl;
         return true;
     }
     return false;
 }
-
 bool Parser::match(int expected_type) {
+    if (tmp_index >= tokens_list.size()) {
+        cerr << "Error: Token index out of bounds!" << endl;
+        return false;
+    }
     if (token.token_type == expected_type) {
         nextToken();
         return true;
@@ -245,12 +249,12 @@ Node* Parser::assignStmt() {
 }
 
 Node* Parser::readStmt() {
-    cout << "Entering readStmt()" << endl; // Debugging statement
+    cout << "Entering readStmt()" << endl;
     Node* t = new Node("read", "READ", "ellipse");
     match(TokenType::READ);
     t->setChildren({new Node(token.string_val, "ID", "ellipse"), nullptr});
     match(TokenType::IDENTIFIER);
-    cout << "Exiting readStmt()" << endl; // Debugging statement
+    cout << "Exiting readStmt()" << endl;
     return t;
 }
 
@@ -264,47 +268,71 @@ Node* Parser::writeStmt() {
 }
 
 void Parser::createNodesTable(Node* node) {
-    if (node == nullptr) { // Check if node is null
-        if (parse_tree == nullptr) { // Ensure parse_tree is also initialized
-            cerr << "Error: Parse tree is not initialized." << endl;
-            return;
-        }
-        node = parse_tree; // Start from the root of the parse tree
+    if (node == nullptr) { // Check for null node
+        cerr << "Error: Null node encountered in createNodesTable." << endl;
+        return;
     }
 
-    // Process the current node only if it hasn't been added to the table
+    // Debug: Print the node being processed
+    cout << "Processing node with value: " << node->token_value
+         << ", code: " << node->code_value
+         << ", shape: " << node->shape
+         << endl;
+
+    // Assign index if it doesn't exist
     if (node->index == -1) {
         node->index = nodes_table.size(); // Assign a new index
         nodes_table[node->index] = {node->token_value, node->code_value, node->shape};
     }
 
-    // Traverse children recursively
+    // Debug: Print table size after insertion
+    cout << "Nodes table size: " << nodes_table.size() << endl;
+
+    // Process children
     for (auto child : node->children) {
-        if (child != nullptr) { // Check for null children
-            createNodesTable(child);
+        if (child == nullptr) {
+            continue;
         }
+        createNodesTable(child);
     }
 
-    // Traverse sibling recursively
+    // Process sibling
     if (node->sibling != nullptr) {
         createNodesTable(node->sibling);
     }
 }
 
 
+
 void Parser::createEdgesTable(Node* node) {
     if (node == nullptr) {
-        node = parse_tree;
+        if (parse_tree == nullptr) {
+            cerr << "Error: Parse tree is not initialized." << endl;
+            return;
+        }
+        node = parse_tree; // Start from the root of the parse tree
     }
+
+    cout << "Processing node index: " << node->index << endl;
+
+    // Process children
     for (auto child : node->children) {
-        edges_table.emplace_back(node->index, child->index);
-        createEdgesTable(child);
+        if (child != nullptr) {
+            cout << "Adding edge: (" << node->index << ", " << child->index << ")" << endl;
+            edges_table.emplace_back(node->index, child->index); // Add edge from current node to child
+            createEdgesTable(child); // Recur on child
+        }
     }
+
+    // Process sibling
     if (node->sibling != nullptr) {
-        edges_table.emplace_back(node->index, node->sibling->index);
-        createEdgesTable(node->sibling);
+        cout << "Adding edge: (" << node->index << ", " << node->sibling->index << ")" << endl;
+        edges_table.emplace_back(node->index, node->sibling->index); // Add edge from current node to sibling
+        createEdgesTable(node->sibling); // Recur on sibling
     }
 }
+
+
 
 void Parser::run() {
     cout << "Running parser..." << endl; // Debugging statement
@@ -350,9 +378,35 @@ void Parser::printParseTree(Node* node, int depth) {
 int main(int argc, char** argv) {
     // use static data token to test parser
     const vector<Token> tokens = {
-        {TokenType::READ, "read", 0},
-        {TokenType::IDENTIFIER, "x", 0},
+        {TokenType::IF, "if", 0},
+                {TokenType::IDENTIFIER, "a", 0},
+                {TokenType::LESSTHAN, "<", 0},
+                {TokenType::NUMBER, "10", 10},
+                {TokenType::THEN, "then", 0},
+                {TokenType::IDENTIFIER, "b", 0},
+                {TokenType::ASSIGN, ":=", 0},
+                {TokenType::NUMBER, "1", 1},
+                {TokenType::SEMICOLON, ";", 0},
+                {TokenType::IF, "if", 0},
+                {TokenType::IDENTIFIER, "c", 0},
+                {TokenType::LESSTHAN, "<", 0},
+                {TokenType::NUMBER, "20", 20},
+                {TokenType::THEN, "then", 0},
+                {TokenType::IDENTIFIER, "d", 0},
+                {TokenType::ASSIGN, ":=", 0},
+                {TokenType::IDENTIFIER, "b", 0},
+                {TokenType::PLUS, "+", 0},
+                {TokenType::NUMBER, "2", 2},
+                {TokenType::SEMICOLON, ";", 0},
+                {TokenType::END, "end", 0},
+                {TokenType::ELSE, "else", 0},
+                {TokenType::IDENTIFIER, "d", 0},
+                {TokenType::ASSIGN, ":=", 0},
+                {TokenType::NUMBER, "0", 0},
+                {TokenType::SEMICOLON, ";", 0},
+                {TokenType::END, "end", 0},
     };
+
 
     Parser parser;
     parser.setTokensList(tokens);
@@ -363,3 +417,32 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+/*
+    * {TokenType::IF, "if", 0},
+        {TokenType::IDENTIFIER, "a", 0},
+        {TokenType::LESSTHAN, "<", 0},
+        {TokenType::NUMBER, "10", 10},
+        {TokenType::THEN, "then", 0},
+        {TokenType::IDENTIFIER, "b", 0},
+        {TokenType::ASSIGN, ":=", 0},
+        {TokenType::NUMBER, "1", 1},
+        {TokenType::SEMICOLON, ";", 0},
+        {TokenType::IF, "if", 0},
+        {TokenType::IDENTIFIER, "c", 0},
+        {TokenType::LESSTHAN, "<", 0},
+        {TokenType::NUMBER, "20", 20},
+        {TokenType::THEN, "then", 0},
+        {TokenType::IDENTIFIER, "d", 0},
+        {TokenType::ASSIGN, ":=", 0},
+        {TokenType::IDENTIFIER, "b", 0},
+        {TokenType::PLUS, "+", 0},
+        {TokenType::NUMBER, "2", 2},
+        {TokenType::SEMICOLON, ";", 0},
+        {TokenType::END, "end", 0},
+        {TokenType::ELSE, "else", 0},
+        {TokenType::IDENTIFIER, "d", 0},
+        {TokenType::ASSIGN, ":=", 0},
+        {TokenType::NUMBER, "0", 0},
+        {TokenType::SEMICOLON, ";", 0},
+        {TokenType::END, "end", 0},
+     */
