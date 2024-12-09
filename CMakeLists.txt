@@ -11,9 +11,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Corrosion)
 corrosion_import_crate(
     MANIFEST_PATH scanner/Cargo.toml
-    PROFILE release
 )
 
 project(TinyCompiler)
-add_executable(TinyCompiler src/main.c parser/parser.cpp parser/parser.hpp scanner/scanner.cpp scanner/scanner.h)
+add_executable(
+    TinyCompiler
+    src/main.cpp
+    src/parser.cpp
+    src/parser.hpp
+)
+
 target_link_libraries(TinyCompiler scanner)
