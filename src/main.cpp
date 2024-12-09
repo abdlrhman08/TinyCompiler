@@ -1,6 +1,8 @@
-#include "scanner.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "scanner.h"
+#include "parser.hpp"
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -19,10 +21,11 @@ int main(int argc, char** argv) {
     }
 
     size_t token_count = get_token_count();
-    printf("Tokens: %zu\n", token_count);
-    for (size_t i = 0; i < token_count; i++) {
-        print_token(&tokens[i]);
-    }
+    Parser parser;
+    parser.setTokensList(tokens, token_count);
+    parser.run();
+    parser.printParseTree(parser.parse_tree, 0);
+    parser.clearTables();
 
     return 0;
 }

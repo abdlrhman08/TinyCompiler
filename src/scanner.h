@@ -1,6 +1,14 @@
+#ifndef _SCANNER_H_
+#define _SCANNER_H_
+
+#include <cstddef>
 #include <stdint.h>
 
-enum TokenType {
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum TokenType {
     SEMICOLON,
     IF,
     THEN,
@@ -22,37 +30,24 @@ enum TokenType {
     NUMBER,
     UNKNOWN,
     ELSE,
-};
+} TokenType;
 
-#ifndef __cplusplus
-typedef enum TokenType TokenType;
-#endif
-
-#include <stddef.h> 
-
-struct Token {
+typedef struct Token {
     TokenType token_type;
     const char* string_val;
     unsigned long long num_val;
-};
+} Token;
 
-#ifndef __cplusplus
-typedef struct Token Token;
-#endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 uint8_t open_compilation(const char* file_name);
+size_t get_token_count();
 
 void print_token(Token* token);
 void print_error();
 
 Token* tokenize();
 
-size_t get_token_count();
 #ifdef __cplusplus
 }
 #endif
-
-
+#endif
