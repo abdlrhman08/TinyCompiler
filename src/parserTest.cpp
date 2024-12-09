@@ -79,17 +79,26 @@ Node* Parser::stmtSequence() {
     vector<Node*> stmts;
 
     while (token.token_type != TokenType::END && token.token_type != TokenType::ELSE && token.token_type != TokenType::UNTIL) {
-        Node* t = statement(); // Parse a single statement
+        Node* t = statement(); // Attempt to parse a single statement
+
         if (t != nullptr) {
-            stmts.push_back(t);
+            stmts.push_back(t); // Add the valid statement to the list
         }
 
-        // Match semicolon between statements, but don't require it at the end
+        // Check if the next token is a semicolon
         if (token.token_type == TokenType::SEMICOLON) {
-            match(TokenType::SEMICOLON);
-        } else {
-            break; // Exit loop if no semicolon is found
+            match(TokenType::SEMICOLON); // Consume the semicolon
+            cout << "Matched semicolon." << endl; // Debugging output
         }
+
+        if (token.token_type != TokenType::IDENTIFIER &&
+            token.token_type != TokenType::READ &&
+            token.token_type != TokenType::WRITE &&
+            token.token_type != TokenType::IF &&
+            token.token_type != TokenType::REPEAT &&
+            token.token_type != TokenType::END) {
+            break;
+            }
     }
 
     Node* stmt_seq = new Node("stmt_sequence", "", "ellipse");
@@ -98,8 +107,6 @@ Node* Parser::stmtSequence() {
     cout << "Exiting stmtSequence()" << endl;
     return stmt_seq;
 }
-
-
 
 Node* Parser::factor() {
     cout << "Entering factor() with token: " << token.string_val << endl; // Debugging statement
@@ -378,33 +385,9 @@ void Parser::printParseTree(Node* node, int depth) {
 int main(int argc, char** argv) {
     // use static data token to test parser
     const vector<Token> tokens = {
-        {TokenType::IF, "if", 0},
-                {TokenType::IDENTIFIER, "a", 0},
-                {TokenType::LESSTHAN, "<", 0},
-                {TokenType::NUMBER, "10", 10},
-                {TokenType::THEN, "then", 0},
-                {TokenType::IDENTIFIER, "b", 0},
-                {TokenType::ASSIGN, ":=", 0},
-                {TokenType::NUMBER, "1", 1},
-                {TokenType::SEMICOLON, ";", 0},
-                {TokenType::IF, "if", 0},
-                {TokenType::IDENTIFIER, "c", 0},
-                {TokenType::LESSTHAN, "<", 0},
-                {TokenType::NUMBER, "20", 20},
-                {TokenType::THEN, "then", 0},
-                {TokenType::IDENTIFIER, "d", 0},
-                {TokenType::ASSIGN, ":=", 0},
-                {TokenType::IDENTIFIER, "b", 0},
-                {TokenType::PLUS, "+", 0},
-                {TokenType::NUMBER, "2", 2},
-                {TokenType::SEMICOLON, ";", 0},
-                {TokenType::END, "end", 0},
-                {TokenType::ELSE, "else", 0},
-                {TokenType::IDENTIFIER, "d", 0},
-                {TokenType::ASSIGN, ":=", 0},
-                {TokenType::NUMBER, "0", 0},
-                {TokenType::SEMICOLON, ";", 0},
-                {TokenType::END, "end", 0},
+        {TokenType::READ, "read", 0},
+        {TokenType::IDENTIFIER, "x", 0},
+        {TokenType::SEMICOLON, ";", 0},
     };
 
 
