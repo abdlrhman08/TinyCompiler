@@ -20,6 +20,7 @@
             extensions = [ "rust-src" ];
           })
 
+          gdb
           cmake
         ];
       };
