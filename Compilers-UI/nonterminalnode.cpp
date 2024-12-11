@@ -31,4 +31,13 @@ NonTerminalNode *NonTerminalNode::addNonTerminalChild(QGraphicsScene* scene)
     return newChild;
 }
 
+TerminalNode *NonTerminalNode::addTerminalChild(QGraphicsScene *scene)
+{
+    TerminalNode* child = new TerminalNode(rect().x() + 20, rect().y() + 100 , 30);
+    scene->addItem(child);
+
+    scene->addLine(rect().x()+50, rect().y()+50, child->rect().x()+30, child->rect().y(), QPen(Qt::black));
+    return child;
+}
+
 

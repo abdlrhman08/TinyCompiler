@@ -13,6 +13,9 @@ public:
     }
 
     TerminalNode* addChild(QGraphicsScene *scene);
+    TerminalNode* addTwoChildren(QGraphicsScene *scene);
+
+
 };
 
 #endif // TERMINALNODE_H

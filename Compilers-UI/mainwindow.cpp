@@ -40,6 +40,8 @@ MainWindow::MainWindow(QWidget *parent)
     auto siblingChild = sibling->addNonTerminalChild(scene);
     siblingChild->addSibling(scene);
 
+    siblingChild->addTerminalChild(scene);
+
     // auto sibling = new NonTerminalNode(500, 50, 100, 50);
     // scene->addItem(sibling);
 
