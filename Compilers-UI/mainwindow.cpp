@@ -47,15 +47,6 @@ MainWindow::MainWindow(QWidget *parent)
     terminalChild->addChild(scene, "id\n test");
     terminalChild->addChild(scene, "id\n test");
 
-
-    // auto sibling = new NonTerminalNode(500, 50, 100, 50);
-    // scene->addItem(sibling);
-
-    // // Connections (Lines)
-    // scene->addLine(400, 100, 375, 135, QPen(Qt::black)); // Root to Child1
-    // scene->addLine(400, 100, 415, 135, QPen(Qt::black)); // Root to Child2
-    // scene->addLine(450, 75, 500, 75, QPen(Qt::black));   // Root to Sibling
-
     // Window Settings
     setWindowTitle("Parser Tree Viewer");
     resize(800, 600);
