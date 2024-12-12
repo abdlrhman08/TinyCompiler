@@ -13,16 +13,18 @@
 class NonTerminalNode : public QGraphicsRectItem
 {
 public:
-    NonTerminalNode(qreal x, qreal y, qreal width, qreal height)
-        : QGraphicsRectItem(x,y,width, height){
-        setBrush(QBrush(Qt::blue));
-    }
+    NonTerminalNode(qreal x, qreal y, qreal width, qreal height, QString text);
 
     void addChild(QGraphicsItem* child);
-    NonTerminalNode* addSibling(QGraphicsScene* scence);
-    NonTerminalNode* addNonTerminalChild(QGraphicsScene* scence);
+    NonTerminalNode* addSibling(QGraphicsScene* scence, QString text);
+    NonTerminalNode* addNonTerminalChild(QGraphicsScene* scence, QString text);
 
-    TerminalNode* addTerminalChild(QGraphicsScene* scene);
+    TerminalNode* addTerminalChild(QGraphicsScene* scene, QString text);
+
+    int lastChild = 0;
+
+private:
+    QGraphicsTextItem* textItem;
 };
 
 #endif // NONTERMINALNODE_H

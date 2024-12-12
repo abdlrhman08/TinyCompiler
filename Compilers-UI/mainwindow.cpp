@@ -30,17 +30,23 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Add some graphics items to the scene
     // Root Node
-    NonTerminalNode* root = new NonTerminalNode(120, 120, 100, 50);
+    NonTerminalNode* root = new NonTerminalNode(120, 120, 100, 50, "read\n(x)");
     scene->addItem(root);
 
-    auto sibling = root->addSibling(scene);//first sibling
-    sibling->addSibling(scene);//second sibling
+    auto sibling = root->addSibling(scene, "if");//first sibling
+    sibling->addTerminalChild(scene, "op\n(<)");
+    sibling->addSibling(scene, "repeat");//second sibling
 
 
-    auto siblingChild = sibling->addNonTerminalChild(scene);
-    siblingChild->addSibling(scene);
+    auto siblingChild = sibling->addNonTerminalChild(scene, "repeat");
+    siblingChild->addSibling(scene, "repeat");
 
-    siblingChild->addTerminalChild(scene);
+    auto terminalChild = siblingChild->addTerminalChild(scene, "id\n test");
+
+    terminalChild->addChild(scene, "id\n test");
+    terminalChild->addChild(scene, "id\n test");
+    terminalChild->addChild(scene, "id\n test");
+
 
     // auto sibling = new NonTerminalNode(500, 50, 100, 50);
     // scene->addItem(sibling);

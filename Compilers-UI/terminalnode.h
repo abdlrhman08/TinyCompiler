@@ -3,17 +3,20 @@
 #include <QGraphicsEllipseItem>
 #include <QBrush>
 #include <QGraphicsScene>
+#include <QGraphicsTextItem>
+#include <iostream>
 
 // Custom Terminal Node
 class TerminalNode : public QGraphicsEllipseItem {
 public:
-    TerminalNode(qreal x, qreal y, qreal radius)
-        : QGraphicsEllipseItem(x, y, radius * 2, radius * 2) {
-        setBrush(QBrush(Qt::green));
-    }
+    TerminalNode(qreal x, qreal y, qreal radius,  QString text);
 
-    TerminalNode* addChild(QGraphicsScene *scene);
-    TerminalNode* addTwoChildren(QGraphicsScene *scene);
+    TerminalNode* addChild(QGraphicsScene *scene, QString text);
+
+    int lastChildX = 0;
+
+private:
+    QGraphicsTextItem* textItem;
 
 
 };
