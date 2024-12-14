@@ -12,6 +12,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
+# Add Rust integration using Corrosion
+include(FetchContent)
+
+FetchContent_Declare(
+    Corrosion
+    GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+    GIT_TAG v0.5 # Optionally specify a commit hash, version tag or branch here
+)
+
+FetchContent_MakeAvailable(Corrosion)
+
+# Import the Rust crate
+corrosion_import_crate(
+    MANIFEST_PATH ${CMAKE_SOURCE_DIR}/scanner/Cargo.toml
+)
+
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
@@ -49,7 +65,7 @@ else()
     endif()
 endif()
 
-target_link_libraries(Compilers-UI-cmake PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(Compilers-UI-cmake PRIVATE Qt${QT_VERSION_MAJOR}::Widgets scanner)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

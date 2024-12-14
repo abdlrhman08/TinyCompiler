@@ -32,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Add some graphics items to the scene
     test_nodes(scene, true);
     std::cout<<"test"<<std::endl;
-    open_compilation("test-tiny.tiny");
+    // open_compilation("test-tiny.tiny");
     // Token* tokens = tokenize();
     // size_t token_count = get_token_count();
     // Parser parser;
