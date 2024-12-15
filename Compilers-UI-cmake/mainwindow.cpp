@@ -48,7 +48,7 @@ MainWindow::MainWindow(QWidget *parent)
     Parser parser;
     parser.setTokensList(tokens, token_count);
     parser.run();
-    parser.printParseTree(parser.parse_tree, 0);
+    //parser.printParseTree(parser.parse_tree, 0);
     NonTerminalNode* root = new NonTerminalNode(120, 120, 100, 50, QString::fromStdString(parser.parse_tree->token_value));
     scene->addItem(root);
     traverse_parse_tree(parser.parse_tree, scene, root, nullptr);
@@ -128,11 +128,11 @@ void MainWindow::on_actioncompile_new_file_triggered(){
 
     // Check if a file was selected
     if (!filePath.isEmpty()) {
-        if (open_compilation(filePath.toStdString().c_str()) != 0) 
+        if (open_compilation(filePath.toStdString().c_str()) != 0)
         {
             print_error();
         }
-        
+
         Token* tokens = tokenize();
         size_t token_count = get_token_count();
         for (size_t i = 0; i < token_count; i++)
