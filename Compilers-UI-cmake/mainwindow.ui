@@ -24,8 +24,13 @@
     </rect>
    </property>
    <widget class="QMenu" name="menufile">
+    <property name="font">
+     <font>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
     <property name="title">
-     <string>file</string>
+     <string>FILE</string>
     </property>
     <addaction name="actioncompile_new_file"/>
    </widget>
@@ -35,6 +40,11 @@
   <action name="actioncompile_new_file">
    <property name="text">
     <string>compile new file</string>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>11</pointsize>
+    </font>
    </property>
   </action>
  </widget>
