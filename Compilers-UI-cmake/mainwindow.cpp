@@ -9,6 +9,7 @@
 #include "scanner.h"
 #include <QFileDialog>
 #include <QString>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -94,6 +95,10 @@ void MainWindow::traverse_parse_tree(Node* node, QGraphicsScene *scene, NonTermi
 
     //add sibling if any
     if (node->sibling != nullptr){
+        if (node->sibling->token_value == "SYNTAX_ERROR"){
+            QMessageBox::warning(nullptr, "Warning", "Syntax error");
+        }
+
         NonTerminalNode* sibling = nt->addSibling(scene, QString::fromStdString(node->sibling->token_value), counter);
         traverse_parse_tree(node->sibling, scene, sibling, nullptr, counter++);
     }

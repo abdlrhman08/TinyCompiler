@@ -73,7 +73,7 @@ bool Parser::nextToken() {
     return false;
 }
 bool Parser::match(int expected_type) {
-    if (tmp_index >= tokens_num) {
+    if (tmp_index >= tokens_num - 1) {
         cerr << "Error: Token index out of bounds!" << endl;
         return false;
     }
@@ -114,10 +114,16 @@ Node* Parser::stmtSequence() {
     //vector<Node*> stmts;
 
     Node* temp = statement();
+    if (temp == nullptr) {
+        temp = new Node("SYNTAX_ERROR", "SE", "rectangle");
+        return temp;
+    }
     Node* first = temp;
     while (token.token_type != TokenType::END && token.token_type != TokenType::ELSE && token.token_type != TokenType::UNTIL) {
-        if(!match(TokenType::SEMICOLON))
+        if(!match(TokenType::SEMICOLON)) {
+            temp->sibling = new Node("SYNTAX_ERROR", "SE", "rectangle");
             break;
+        }
         Node* t = statement(); // Attempt to parse a single statement
 
         //if (t != nullptr) {
@@ -126,7 +132,9 @@ Node* Parser::stmtSequence() {
 
         if (t == nullptr) {
             cerr << "Warning: Empty or invalid statement in stmtSequence." << endl;
-            return nullptr;
+            t = new Node("SYNTAX_ERROR", "SE", "rectangle");
+            temp->sibling = t;
+            break;
         }
 
         // Check if the next token is a semicolon
@@ -269,6 +277,7 @@ Node* Parser::ifStmt() {
         match(TokenType::END);
     } else {
         cerr << "Syntax Error: Expected 'END' after if statement." << endl;
+        return nullptr;
     }
 
     // Set children
@@ -328,7 +337,8 @@ Node* Parser::assignStmt() {
     std::string assign_val = "assign (" + std::string(token.string_val) + ")";
     Node* t = new Node(assign_val, "ID", "rectangle");
     match(TokenType::IDENTIFIER);
-    match(TokenType::ASSIGN);
+    if(!match(TokenType::ASSIGN))
+        return nullptr;
     Node* expNode = exp();
     t->setChildren({expNode});
     cout << "Exiting assignStmt()" << endl; // Debugging statement
