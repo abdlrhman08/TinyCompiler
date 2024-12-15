@@ -3,9 +3,11 @@
 //
 
 #include "parser.hpp"
+#include "scanner.h"
 
+#include <cstddef>
+#include <ostream>
 #include <utility>
-#include <iostream>
 
 // Node Implementation
 Node::Node(string t, string c, string s) : token_value(std::move(t)), code_value(std::move(c)), shape(std::move(s)) {}
@@ -21,11 +23,45 @@ void Node::setSibling(Node* y) {
 // Parser Implementation
 Parser::Parser() = default;
 
+bool Parser::validateIdentifier(const Token& token) {
+    // Check if token type is IDENTIFIER
+    if (token.token_type != TokenType::IDENTIFIER) {
+        cerr << "Syntax Error: Expected an identifier, but found '";
+        if (!token.string_val) {
+            cerr << token.num_val << endl;
+        } else {
+            cerr << token.string_val << endl;
+        }
+        return false;
+    }
+
+    // Validate the token value (e.g., no numbers at the start)
+    const std::string& value = token.string_val;
+
+    // Identifier must start with a letter or underscore
+    if (!isalpha(value[0]) && value[0] != '_') {
+        cerr << "Syntax Error: Identifier must start with a letter or '_', but found '"
+             << value[0] << "' in '" << value << "'." << endl;
+        return false;
+    }
+
+    // Check the rest of the identifier for valid characters
+    for (size_t i = 1; i < value.length(); ++i) {
+        if (!isalnum(value[i]) && value[i] != '_') {
+            cerr << "Syntax Error: Invalid character '" << value[i]
+                 << "' in identifier '" << value << "'." << endl;
+            return false;
+        }
+    }
+
+    return true; // Valid identifier
+}
+
 void Parser::setTokensList(Token* tok_list, size_t num) {
     tokens_list = tok_list;
     tokens_num = num;
     tmp_index = 0;
-    if (num != 0) {
+    if (tokens_num != 0) {
         token = tokens_list[tmp_index];
     }
 }
@@ -34,12 +70,16 @@ bool Parser::nextToken() {
     if (tmp_index < tokens_num - 1) {
         tmp_index++;
         token = tokens_list[tmp_index];
+        cout << "Next token: " << token.string_val << endl;
         return true;
     }
     return false;
 }
-
 bool Parser::match(int expected_type) {
+    if (tmp_index >= tokens_num) {
+        cerr << "Error: Token index out of bounds!" << endl;
+        return false;
+    }
     if (token.token_type == expected_type) {
         nextToken();
         return true;
@@ -48,20 +88,28 @@ bool Parser::match(int expected_type) {
 }
 
 Node* Parser::statement() {
+    cout << "Entering statement() with token: " << token.string_val << endl; // Debugging statement
     Node* t = nullptr;
     if (token.token_type == TokenType::IF) {
+        cout << "IF" << endl;
         t = ifStmt();
     } else if (token.token_type == TokenType::REPEAT) {
+        cout << "REPEAT" << endl;
         t = repeatStmt();
     } else if (token.token_type == TokenType::IDENTIFIER) {
+        cout << "ASSIGN" << endl;
         t = assignStmt();
     } else if (token.token_type == TokenType::READ) {
+        cout << "READ" << endl;
         t = readStmt();
     } else if (token.token_type == TokenType::WRITE) {
+        cout << "WRITE" << endl;
         t = writeStmt();
     } else {
         cout << "Syntax Error" << endl;
+        return nullptr;
     }
+    cout << "Exiting statement()" << endl; // Debugging statement
     return t;
 }
 
@@ -74,6 +122,11 @@ Node* Parser::stmtSequence() {
 
         if (t != nullptr) {
             stmts.push_back(t); // Add the valid statement to the list
+        }
+
+        if (t == nullptr) {
+            cerr << "Warning: Empty or invalid statement in stmtSequence." << endl;
+            return nullptr;
         }
 
         // Check if the next token is a semicolon
@@ -100,6 +153,7 @@ Node* Parser::stmtSequence() {
 }
 
 Node* Parser::factor() {
+    cout << "Entering factor() with token: " << token.string_val << endl; // Debugging statement
     Node* t = nullptr;
     if (token.token_type == TokenType::IDENTIFIER) {
         t = new Node(token.string_val, "ID", "ellipse");
@@ -110,11 +164,16 @@ Node* Parser::factor() {
     } else if (match(TokenType::OPENBRACKET)) {
         t = exp();
         match(TokenType::CLOSEDBRACKET);
+    } else {
+        cout << "Syntax Error in factor()" << endl; // Debugging statement
+        return nullptr;
     }
+    cout << "Exiting factor()" << endl; // Debugging statement
     return t;
 }
 
 Node* Parser::term() {
+    cout << "Entering term()" << endl; // Debugging statement
     Node* t = factor();
     while (token.token_type == TokenType::MULT || token.token_type == TokenType::DIV) {
         Node* p = new Node(token.string_val, "OP", "ellipse");
@@ -123,40 +182,69 @@ Node* Parser::term() {
         p->setChildren({t, factor()});
         t = p;
     }
+    cout << "Exiting term()" << endl; // Debugging statement
     return t;
 }
 
 Node* Parser::simpleExp() {
+    cout << "Entering simpleExp()" << endl; // Debugging statement
+
+    // Parse the first term
     Node* left = term();
 
+    // Handle additive or relational operators
     while (token.token_type == TokenType::PLUS || token.token_type == TokenType::MINUS ||
            token.token_type == TokenType::LESSTHAN || token.token_type == TokenType::EQUAL) {
+        // Create a node for the operator
         Node* operatorNode = new Node(token.string_val, "OP", "ellipse");
-        nextToken();
-        Node* right = term();
-        operatorNode->setChildren({left, right});
-        left = operatorNode;
-           }
 
+        // Advance the token
+        nextToken();
+
+        // Parse the next term
+        Node* right = term();
+
+        // Set children for the operator node
+        operatorNode->setChildren({left, right});
+
+        // Update the current tree
+        left = operatorNode;
+   }
+
+    cout << "Exiting simpleExp()" << endl; // Debugging statement
     return left;
 }
-
 Node* Parser::exp() {
+    cout << "Entering exp()" << endl; // Debugging statement
+
+    // Parse the left-hand side
     Node* left = simpleExp();
 
+    // Handle relational operators
     if (token.token_type == TokenType::LESSTHAN || token.token_type == TokenType::EQUAL) {
+        // Create a node for the operator
         Node* operatorNode = new Node(token.string_val, "OP", "ellipse");
+
+        // Advance the token
         nextToken();
+
+        // Parse the right-hand side
         Node* right = simpleExp();
+
+        // Set children for the operator node
         operatorNode->setChildren({left, right});
+
+        // Update the expression tree
         left = operatorNode;
     }
 
+    cout << "Exiting exp()" << endl; // Debugging statement
     return left;
 }
 
-
 Node* Parser::ifStmt() {
+    cout << "Entering ifStmt()" << endl;
+
     Node* ifNode = new Node("ifStmt", "", "rectangle");
 
     match(TokenType::IF);
@@ -177,47 +265,98 @@ Node* Parser::ifStmt() {
         match(TokenType::END);
     } else {
         cerr << "Syntax Error: Expected 'END' after if statement." << endl;
+        return nullptr;
     }
 
     // Set children
     ifNode->setChildren(children);
 
+    cout << "Exiting ifStmt()" << endl;
     return ifNode;
 }
 
+
+
 Node* Parser::repeatStmt() {
-    Node* t = new Node("repeat", "REPEAT", "ellipse");
+    // Create the root node for the repeat statement
+    Node* repeatNode = new Node("repeat", "REPEAT", "ellipse");
+
+    // Match the 'REPEAT' keyword
     match(TokenType::REPEAT);
-    Node* stmt_node = stmtSequence();
+
+    // Parse the statement sequence inside the 'REPEAT' block
+    Node* stmtNode = stmtSequence();
+    if (!stmtNode) {
+        cerr << "Syntax Error: Invalid statement sequence in repeat statement." << endl;
+        delete repeatNode; // Clean up allocated memory
+        return nullptr;    // Exit gracefully on error
+    }
+
+    // Ensure the 'UNTIL' keyword is present
+    if (token.token_type != TokenType::UNTIL) {
+        cerr << "Syntax Error: Expected 'UNTIL' in repeat statement." << endl;
+        delete repeatNode; // Clean up allocated memory
+        delete stmtNode;   // Clean up allocated memory
+        return nullptr;    // Exit gracefully on error
+    }
+
+    // Match the 'UNTIL' keyword
     match(TokenType::UNTIL);
-    Node* exp_node = exp();
-    t->setChildren({stmt_node, exp_node});
-    return t;
+
+    // Parse the expression following 'UNTIL'
+    Node* expNode = exp();
+    if (!expNode) {
+        cerr << "Syntax Error: Invalid expression following 'UNTIL' in repeat statement." << endl;
+        delete repeatNode; // Clean up allocated memory
+        delete stmtNode;   // Clean up allocated memory
+        return nullptr;    // Exit gracefully on error
+    }
+
+    // Set the children of the repeat node
+    repeatNode->setChildren({stmtNode, expNode});
+
+    return repeatNode; // Return the constructed repeat node
 }
 
+
 Node* Parser::assignStmt() {
+    cout << "Entering assignStmt()" << endl; // Debugging statement
+    if (!validateIdentifier(token)) {
+        return nullptr;
+    }
     Node* t = new Node("assign", "ID", "ellipse");
     Node* idNode = new Node(token.string_val, "ID", "ellipse");
     match(TokenType::IDENTIFIER);
     match(TokenType::ASSIGN);
     Node* expNode = exp();
     t->setChildren({idNode, expNode});
+    cout << "Exiting assignStmt()" << endl; // Debugging statement
     return t;
 }
 
-
 Node* Parser::readStmt() {
-    Node* t = new Node("read", "READ", "ellipse");
+    Node* readNode = new Node("read", "READ", "ellipse");
     match(TokenType::READ);
-    t->setChildren({new Node(token.string_val, "ID", "ellipse"), nullptr});
-    match(TokenType::IDENTIFIER);
-    return t;
+
+    // Validate and handle the identifier
+    if (validateIdentifier(token)) {
+        Node* idNode = new Node(token.string_val, "IDENTIFIER", "rectangle");
+        readNode->setChildren({new Node(token.string_val, "ID", "ellipse"), nullptr});
+        match(TokenType::IDENTIFIER); // Consume the identifier
+    } else {
+        delete readNode; // Clean up memory
+        return nullptr;  // Exit gracefully
+    }
+
+    return readNode;
 }
 
 Node* Parser::writeStmt() {
+    cout << "Entering writeStmt()" << endl; // Debugging statement
     Node* t = new Node("write", "WRITE", "ellipse");
     match(TokenType::WRITE);
     t->setChildren({exp(), nullptr});
+    cout << "Exiting writeStmt()" << endl; // Debugging statement
     return t;
 }
 
@@ -255,6 +394,9 @@ void Parser::createNodesTable(Node* node) {
         createNodesTable(node->sibling);
     }
 }
+
+
+
 void Parser::createEdgesTable(Node* node) {
     if (node == nullptr) {
         if (parse_tree == nullptr) {
@@ -283,16 +425,18 @@ void Parser::createEdgesTable(Node* node) {
     }
 }
 
+
+
 void Parser::run() {
+    cout << "Running parser..." << endl; // Debugging statement
     parse_tree = stmtSequence();
+    if (parse_tree == nullptr) {
+        cerr << "Error: Failed to parse input." << endl;
+        return;
+    }
     createNodesTable(parse_tree);
     createEdgesTable(parse_tree);
-}
-
-void Parser::clearTables() {
-    nodes_table.clear();
-    edges_table.clear();
-    same_rank_nodes.clear();
+    cout << "Finished parsing" << endl; // Debugging statement
 }
 
 void Parser::outputTables() {
@@ -304,6 +448,12 @@ void Parser::outputTables() {
     for (const auto& edge : edges_table) {
         cout << edge.first << " -> " << edge.second << endl;
     }
+}
+
+void Parser::clearTables() {
+    nodes_table.clear();
+    edges_table.clear();
+    same_rank_nodes.clear();
 }
 
 void Parser::printParseTree(Node* node, int depth) {
@@ -321,3 +471,75 @@ void Parser::printParseTree(Node* node, int depth) {
         printParseTree(node->sibling, depth);
     }
 }
+
+//int main(int argc, char** argv) {
+//    // use static data token to test parser
+//    const vector<Token> tokens = {
+//        {TokenType::IF, "if", 0},
+//                {TokenType::IDENTIFIER, "a", 0},
+//                {TokenType::LESSTHAN, "<", 0},
+//                {TokenType::NUMBER, "10", 10},
+//                {TokenType::THEN, "then", 0},
+//                {TokenType::IDENTIFIER, "b", 0},
+//                {TokenType::ASSIGN, ":=", 0},
+//                {TokenType::NUMBER, "1", 1},
+//                {TokenType::SEMICOLON, ";", 0},
+//                {TokenType::IF, "if", 0},
+//                {TokenType::IDENTIFIER, "c", 0},
+//                {TokenType::LESSTHAN, "<", 0},
+//                {TokenType::NUMBER, "20", 20},
+//                {TokenType::THEN, "then", 0},
+//                {TokenType::IDENTIFIER, "d", 0},
+//                {TokenType::ASSIGN, ":=", 0},
+//                {TokenType::IDENTIFIER, "b", 0},
+//                {TokenType::PLUS, "+", 0},
+//                {TokenType::NUMBER, "2", 2},
+//                {TokenType::SEMICOLON, ";", 0},
+//                {TokenType::END, "end", 0},
+//                {TokenType::ELSE, "else", 0},
+//                {TokenType::IDENTIFIER, "d", 0},
+//                {TokenType::ASSIGN, ":=", 0},
+//                {TokenType::NUMBER, "0", 0},
+//                {TokenType::SEMICOLON, ";", 0},
+//                {TokenType::END, "end", 0},
+//    };
+//
+//
+//    Parser parser;
+//    parser.setTokensList(tokens);
+//    parser.run();
+//    parser.outputTables();
+//    parser.printParseTree(parser.parse_tree, 0);
+//    parser.clearTables();
+//
+//    return 0;
+//}
+///*
+//    * {TokenType::IF, "if", 0},
+//        {TokenType::IDENTIFIER, "a", 0},
+//        {TokenType::LESSTHAN, "<", 0},
+//        {TokenType::NUMBER, "10", 10},
+//        {TokenType::THEN, "then", 0},
+//        {TokenType::IDENTIFIER, "b", 0},
+//        {TokenType::ASSIGN, ":=", 0},
+//        {TokenType::NUMBER, "1", 1},
+//        {TokenType::SEMICOLON, ";", 0},
+//        {TokenType::IF, "if", 0},
+//        {TokenType::IDENTIFIER, "c", 0},
+//        {TokenType::LESSTHAN, "<", 0},
+//        {TokenType::NUMBER, "20", 20},
+//        {TokenType::THEN, "then", 0},
+//        {TokenType::IDENTIFIER, "d", 0},
+//        {TokenType::ASSIGN, ":=", 0},
+//        {TokenType::IDENTIFIER, "b", 0},
+//        {TokenType::PLUS, "+", 0},
+//        {TokenType::NUMBER, "2", 2},
+//        {TokenType::SEMICOLON, ";", 0},
+//        {TokenType::END, "end", 0},
+//        {TokenType::ELSE, "else", 0},
+//        {TokenType::IDENTIFIER, "d", 0},
+//        {TokenType::ASSIGN, ":=", 0},
+//        {TokenType::NUMBER, "0", 0},
+//        {TokenType::SEMICOLON, ";", 0},
+//        {TokenType::END, "end", 0},
+//     */

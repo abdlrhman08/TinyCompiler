@@ -36,17 +36,17 @@ MainWindow::MainWindow(QWidget *parent)
     // Add some graphics items to the scene
     test_nodes(scene, true);
     std::cout<<"test"<<std::endl;
-    if (open_compilation("test-tiny.tiny") != 0) 
-    {
-        print_error();
-    }
-    
-    Token* tokens = tokenize();
-    size_t token_count = get_token_count();
-    for (size_t i = 0; i < token_count; i++)
-    {
-        print_token(&tokens[i]);
-    }
+    //if (open_compilation("test-tiny.tiny") != 0) 
+    //{
+    //    print_error();
+    //}
+    //
+    //Token* tokens = tokenize();
+    //size_t token_count = get_token_count();
+    //for (size_t i = 0; i < token_count; i++)
+    //{
+    //    print_token(&tokens[i]);
+    //}
     // Parser parser;
     // parser.setTokensList(tokens, token_count);
     // parser.run();
@@ -99,6 +99,23 @@ void MainWindow::on_actioncompile_new_file_triggered(){
 
     // Check if a file was selected
     if (!filePath.isEmpty()) {
+        if (open_compilation(filePath.toStdString().c_str()) != 0) 
+        {
+            print_error();
+        }
+        
+        Token* tokens = tokenize();
+        size_t token_count = get_token_count();
+        for (size_t i = 0; i < token_count; i++)
+        {
+            print_token(&tokens[i]);
+        }
+        //Parser parser;
+        //parser.setTokensList(tokens, token_count);
+        //parser.run();
+        //parser.printParseTree(parser.parse_tree, 0);
+
+        //parser.clearTables();
         std::cout << "Selected file: " << filePath.toStdString() << std::endl;
     } else {
         std::cout<< "No file selected.";
