@@ -6,7 +6,9 @@
 #include "scanner.h"
 
 #include <cstddef>
+#include <iostream>
 #include <ostream>
+#include <string>
 #include <utility>
 
 // Node Implementation
@@ -26,12 +28,8 @@ Parser::Parser() = default;
 bool Parser::validateIdentifier(const Token& token) {
     // Check if token type is IDENTIFIER
     if (token.token_type != TokenType::IDENTIFIER) {
-        cerr << "Syntax Error: Expected an identifier, but found '";
-        if (!token.string_val) {
-            cerr << token.num_val << endl;
-        } else {
-            cerr << token.string_val << endl;
-        }
+        cerr << "Syntax Error: Expected an identifier, but found '"
+             << token.string_val << "'." << endl;
         return false;
     }
 
@@ -67,10 +65,9 @@ void Parser::setTokensList(Token* tok_list, size_t num) {
 }
 
 bool Parser::nextToken() {
-    if (tmp_index < tokens_num - 1) {
+    if (tmp_index < tokens_num) {
         tmp_index++;
         token = tokens_list[tmp_index];
-        cout << "Next token: " << token.string_val << endl;
         return true;
     }
     return false;
@@ -88,7 +85,6 @@ bool Parser::match(int expected_type) {
 }
 
 Node* Parser::statement() {
-    cout << "Entering statement() with token: " << token.string_val << endl; // Debugging statement
     Node* t = nullptr;
     if (token.token_type == TokenType::IF) {
         cout << "IF" << endl;
@@ -115,14 +111,18 @@ Node* Parser::statement() {
 
 Node* Parser::stmtSequence() {
     cout << "Entering stmtSequence()" << endl;
-    vector<Node*> stmts;
+    //vector<Node*> stmts;
 
+    Node* temp = statement();
+    Node* first = temp;
     while (token.token_type != TokenType::END && token.token_type != TokenType::ELSE && token.token_type != TokenType::UNTIL) {
+        if(!match(TokenType::SEMICOLON))
+            break;
         Node* t = statement(); // Attempt to parse a single statement
 
-        if (t != nullptr) {
-            stmts.push_back(t); // Add the valid statement to the list
-        }
+        //if (t != nullptr) {
+        //    stmts.push_back(t); // Add the valid statement to the list
+        //}
 
         if (t == nullptr) {
             cerr << "Warning: Empty or invalid statement in stmtSequence." << endl;
@@ -130,36 +130,39 @@ Node* Parser::stmtSequence() {
         }
 
         // Check if the next token is a semicolon
-        if (token.token_type == TokenType::SEMICOLON) {
-            match(TokenType::SEMICOLON); // Consume the semicolon
-            cout << "Matched semicolon." << endl; // Debugging output
-        }
+        //if (token.token_type == TokenType::SEMICOLON) {
+        //    match(TokenType::SEMICOLON); // Consume the semicolon
+        //    cout << "Matched semicolon." << endl; // Debugging output
+        //}
 
-        if (token.token_type != TokenType::IDENTIFIER &&
-            token.token_type != TokenType::READ &&
-            token.token_type != TokenType::WRITE &&
-            token.token_type != TokenType::IF &&
-            token.token_type != TokenType::REPEAT &&
-            token.token_type != TokenType::END) {
-            break;
-            }
+        //if (token.token_type != TokenType::IDENTIFIER &&
+        //    token.token_type != TokenType::READ &&
+        //    token.token_type != TokenType::WRITE &&
+        //    token.token_type != TokenType::IF &&
+        //    token.token_type != TokenType::REPEAT &&
+        //    token.token_type != TokenType::END) {
+        //    break;
+        //    }
+        temp->sibling = t;
+        temp = t;
     }
 
-    Node* stmt_seq = new Node("stmt_sequence", "", "ellipse");
-    stmt_seq->setChildren(stmts);
+    //Node* stmt_seq = new Node("stmt_sequence", "", "rectangle");
+    //stmt_seq->setChildren(stmts);
 
     cout << "Exiting stmtSequence()" << endl;
-    return stmt_seq;
+    return first;
 }
 
 Node* Parser::factor() {
-    cout << "Entering factor() with token: " << token.string_val << endl; // Debugging statement
     Node* t = nullptr;
     if (token.token_type == TokenType::IDENTIFIER) {
-        t = new Node(token.string_val, "ID", "ellipse");
+        std::string val = "id (" + std::string(token.string_val) + ")";
+        t = new Node(val, "ID", "ellipse");
         nextToken();
     } else if (token.token_type == TokenType::NUMBER) {
-        t = new Node(to_string(token.num_val), "CONST", "ellipse");
+        std::string val = "const (" + to_string(token.num_val) + ")";
+        t = new Node(val, "CONST", "ellipse");
         nextToken();
     } else if (match(TokenType::OPENBRACKET)) {
         t = exp();
@@ -176,8 +179,9 @@ Node* Parser::term() {
     cout << "Entering term()" << endl; // Debugging statement
     Node* t = factor();
     while (token.token_type == TokenType::MULT || token.token_type == TokenType::DIV) {
-        Node* p = new Node(token.string_val, "OP", "ellipse");
-        p->setChildren({t, nullptr});
+        std::string val = "OP (" + std::string(token.string_val) + ")";
+        Node* p = new Node(val, "OP", "ellipse");
+        //p->setChildren({t, nullptr});
         nextToken();
         p->setChildren({t, factor()});
         t = p;
@@ -209,7 +213,7 @@ Node* Parser::simpleExp() {
 
         // Update the current tree
         left = operatorNode;
-   }
+           }
 
     cout << "Exiting simpleExp()" << endl; // Debugging statement
     return left;
@@ -265,7 +269,6 @@ Node* Parser::ifStmt() {
         match(TokenType::END);
     } else {
         cerr << "Syntax Error: Expected 'END' after if statement." << endl;
-        return nullptr;
     }
 
     // Set children
@@ -275,11 +278,9 @@ Node* Parser::ifStmt() {
     return ifNode;
 }
 
-
-
 Node* Parser::repeatStmt() {
     // Create the root node for the repeat statement
-    Node* repeatNode = new Node("repeat", "REPEAT", "ellipse");
+    Node* repeatNode = new Node("repeat", "REPEAT", "rectangle");
 
     // Match the 'REPEAT' keyword
     match(TokenType::REPEAT);
@@ -324,38 +325,36 @@ Node* Parser::assignStmt() {
     if (!validateIdentifier(token)) {
         return nullptr;
     }
-    Node* t = new Node("assign", "ID", "ellipse");
-    Node* idNode = new Node(token.string_val, "ID", "ellipse");
+    std::string assign_val = "assign (" + std::string(token.string_val) + ")";
+    Node* t = new Node(assign_val, "ID", "rectangle");
     match(TokenType::IDENTIFIER);
     match(TokenType::ASSIGN);
     Node* expNode = exp();
-    t->setChildren({idNode, expNode});
+    t->setChildren({expNode});
     cout << "Exiting assignStmt()" << endl; // Debugging statement
     return t;
 }
 
 Node* Parser::readStmt() {
-    Node* readNode = new Node("read", "READ", "ellipse");
     match(TokenType::READ);
 
     // Validate and handle the identifier
     if (validateIdentifier(token)) {
-        Node* idNode = new Node(token.string_val, "IDENTIFIER", "rectangle");
-        readNode->setChildren({new Node(token.string_val, "ID", "ellipse"), nullptr});
+        std::string read_val = "read (" + std::string(token.string_val) + ")";
+        Node* readNode = new Node(read_val, "READ", "rectangle");
+        std::cout << read_val << std::endl;
         match(TokenType::IDENTIFIER); // Consume the identifier
-    } else {
-        delete readNode; // Clean up memory
-        return nullptr;  // Exit gracefully
+        return readNode;
     }
 
-    return readNode;
+    return nullptr;
 }
 
 Node* Parser::writeStmt() {
     cout << "Entering writeStmt()" << endl; // Debugging statement
-    Node* t = new Node("write", "WRITE", "ellipse");
+    Node* t = new Node("write", "WRITE", "rectangle");
     match(TokenType::WRITE);
-    t->setChildren({exp(), nullptr});
+    t->setChildren({exp()});
     cout << "Exiting writeStmt()" << endl; // Debugging statement
     return t;
 }
@@ -471,75 +470,3 @@ void Parser::printParseTree(Node* node, int depth) {
         printParseTree(node->sibling, depth);
     }
 }
-
-//int main(int argc, char** argv) {
-//    // use static data token to test parser
-//    const vector<Token> tokens = {
-//        {TokenType::IF, "if", 0},
-//                {TokenType::IDENTIFIER, "a", 0},
-//                {TokenType::LESSTHAN, "<", 0},
-//                {TokenType::NUMBER, "10", 10},
-//                {TokenType::THEN, "then", 0},
-//                {TokenType::IDENTIFIER, "b", 0},
-//                {TokenType::ASSIGN, ":=", 0},
-//                {TokenType::NUMBER, "1", 1},
-//                {TokenType::SEMICOLON, ";", 0},
-//                {TokenType::IF, "if", 0},
-//                {TokenType::IDENTIFIER, "c", 0},
-//                {TokenType::LESSTHAN, "<", 0},
-//                {TokenType::NUMBER, "20", 20},
-//                {TokenType::THEN, "then", 0},
-//                {TokenType::IDENTIFIER, "d", 0},
-//                {TokenType::ASSIGN, ":=", 0},
-//                {TokenType::IDENTIFIER, "b", 0},
-//                {TokenType::PLUS, "+", 0},
-//                {TokenType::NUMBER, "2", 2},
-//                {TokenType::SEMICOLON, ";", 0},
-//                {TokenType::END, "end", 0},
-//                {TokenType::ELSE, "else", 0},
-//                {TokenType::IDENTIFIER, "d", 0},
-//                {TokenType::ASSIGN, ":=", 0},
-//                {TokenType::NUMBER, "0", 0},
-//                {TokenType::SEMICOLON, ";", 0},
-//                {TokenType::END, "end", 0},
-//    };
-//
-//
-//    Parser parser;
-//    parser.setTokensList(tokens);
-//    parser.run();
-//    parser.outputTables();
-//    parser.printParseTree(parser.parse_tree, 0);
-//    parser.clearTables();
-//
-//    return 0;
-//}
-///*
-//    * {TokenType::IF, "if", 0},
-//        {TokenType::IDENTIFIER, "a", 0},
-//        {TokenType::LESSTHAN, "<", 0},
-//        {TokenType::NUMBER, "10", 10},
-//        {TokenType::THEN, "then", 0},
-//        {TokenType::IDENTIFIER, "b", 0},
-//        {TokenType::ASSIGN, ":=", 0},
-//        {TokenType::NUMBER, "1", 1},
-//        {TokenType::SEMICOLON, ";", 0},
-//        {TokenType::IF, "if", 0},
-//        {TokenType::IDENTIFIER, "c", 0},
-//        {TokenType::LESSTHAN, "<", 0},
-//        {TokenType::NUMBER, "20", 20},
-//        {TokenType::THEN, "then", 0},
-//        {TokenType::IDENTIFIER, "d", 0},
-//        {TokenType::ASSIGN, ":=", 0},
-//        {TokenType::IDENTIFIER, "b", 0},
-//        {TokenType::PLUS, "+", 0},
-//        {TokenType::NUMBER, "2", 2},
-//        {TokenType::SEMICOLON, ";", 0},
-//        {TokenType::END, "end", 0},
-//        {TokenType::ELSE, "else", 0},
-//        {TokenType::IDENTIFIER, "d", 0},
-//        {TokenType::ASSIGN, ":=", 0},
-//        {TokenType::NUMBER, "0", 0},
-//        {TokenType::SEMICOLON, ";", 0},
-//        {TokenType::END, "end", 0},
-//     */
