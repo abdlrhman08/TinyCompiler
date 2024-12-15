@@ -39,6 +39,7 @@ public:
     vector<pair<int, int>> same_rank_nodes;
 
     Token token{};
+    bool validateIdentifier(const Token& token);
 
     Parser();
     void setTokensList(Token* tok_list, size_t num);

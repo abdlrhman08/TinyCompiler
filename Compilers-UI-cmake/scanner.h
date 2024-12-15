@@ -28,7 +28,6 @@ typedef enum TokenType {
     OPENBRACKET,
     CLOSEDBRACKET,
     NUMBER,
-    UNKNOWN,
     ELSE,
 } TokenType;
 
@@ -44,6 +43,8 @@ size_t get_token_count();
 
 void print_token(Token* token);
 void print_error();
+
+const char* get_error_string();
 
 Token* tokenize();
 

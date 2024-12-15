@@ -252,8 +252,8 @@ void Parser::createEdgesTable(Node* node) {
 
 void Parser::run() {
     parse_tree = stmtSequence();
-    createNodesTable(parse_tree);
-    createEdgesTable(parse_tree);
+    // createNodesTable(parse_tree);
+    // createEdgesTable(parse_tree);
 }
 
 void Parser::clearTables() {

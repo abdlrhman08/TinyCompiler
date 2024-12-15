@@ -5,12 +5,10 @@
 #include <QGraphicsEllipseItem>
 #include <QPen>
 #include <QBrush>
-#include "nonterminalnode.h"
-#include "terminalnode.h"
 #include <iostream>
 #include "scanner.h"
-#include "parser.h"
 #include <QFileDialog>
+#include <QString>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -34,25 +32,28 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(view);
 
     // Add some graphics items to the scene
-    test_nodes(scene, true);
+    test_nodes(scene, false);
     std::cout<<"test"<<std::endl;
-    //if (open_compilation("test-tiny.tiny") != 0) 
-    //{
-    //    print_error();
-    //}
-    //
-    //Token* tokens = tokenize();
-    //size_t token_count = get_token_count();
-    //for (size_t i = 0; i < token_count; i++)
-    //{
-    //    print_token(&tokens[i]);
-    //}
-    // Parser parser;
-    // parser.setTokensList(tokens, token_count);
-    // parser.run();
-    // parser.printParseTree(parser.parse_tree, 0);
+    if (open_compilation("test-tiny.tiny") != 0)
+    {
+       print_error();
+    }
 
-    // parser.clearTables();
+    Token* tokens = tokenize();
+    size_t token_count = get_token_count();
+    for (size_t i = 0; i < token_count; i++)
+    {
+       print_token(&tokens[i]);
+    }
+    Parser parser;
+    parser.setTokensList(tokens, token_count);
+    parser.run();
+    parser.printParseTree(parser.parse_tree, 0);
+    NonTerminalNode* root = new NonTerminalNode(120, 120, 100, 50, QString::fromStdString(parser.parse_tree->token_value));
+    scene->addItem(root);
+    traverse_parse_tree(parser.parse_tree, scene, root, nullptr);
+
+    parser.clearTables();
 
 
     // Window Settings
@@ -85,6 +86,34 @@ void MainWindow::test_nodes(QGraphicsScene* scene, bool test)
         terminalChild->addChild(scene, "id\n test");
         terminalChild->addChild(scene, "id\n test");
         terminalChild->addChild(scene, "id\n test");
+    }
+}
+
+void MainWindow::traverse_parse_tree(Node* node, QGraphicsScene *scene, NonTerminalNode *nt, TerminalNode *t)
+{
+    //add sibling if any
+    if (node->sibling != nullptr){
+        NonTerminalNode* sibling = nt->addSibling(scene, QString::fromStdString(node->sibling->token_value));
+        traverse_parse_tree(node->sibling, scene, sibling, nullptr);
+    }
+    //add children
+    if (node->shape == "rectangle"){
+        for (Node* child : node->children){
+            if (child->shape=="rectangle"){//non-terminal
+                NonTerminalNode* childNode = nt->addNonTerminalChild(scene, QString::fromStdString(child->token_value));
+                traverse_parse_tree(child, scene, childNode, nullptr);
+            } else {//terminal
+                TerminalNode* childNode = nt->addTerminalChild(scene, QString::fromStdString(child->token_value));
+                traverse_parse_tree(child, scene, nullptr, childNode);
+            }
+        }
+    }else {
+        for (Node* child: node->children){
+            if(t == nullptr)
+                continue;
+            TerminalNode *childNode = t->addChild(scene, QString::fromStdString(child->token_value));
+            traverse_parse_tree(child, scene, nullptr, childNode);
+        }
     }
 }
 
