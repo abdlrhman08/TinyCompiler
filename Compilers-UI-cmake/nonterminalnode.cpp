@@ -13,7 +13,7 @@ NonTerminalNode::NonTerminalNode(qreal x, qreal y, qreal width, qreal height, QS
     // Center the text within the ellipse
     qreal textWidth = textItem->boundingRect().width();
     qreal textHeight = textItem->boundingRect().height();
-    textItem->setPos(x + (textWidth/3) ,y + (textHeight/4));
+    textItem->setPos(x + ((width-textWidth)/2) ,y + (textHeight/4));
 }
 
 // a child will have coordinates relative to the parent
@@ -29,9 +29,9 @@ void NonTerminalNode::addChild(QGraphicsItem *child)
     // children_.append(child); // Store child if needed for other purposes
 }
 
-NonTerminalNode* NonTerminalNode::addSibling(QGraphicsScene* scene, QString text)
+NonTerminalNode* NonTerminalNode::addSibling(QGraphicsScene* scene, QString text, int offset_weight)
 {
-    NonTerminalNode* sibling = new NonTerminalNode(rect().x()+200, rect().y(), 100, 50, text);
+    NonTerminalNode* sibling = new NonTerminalNode(rect().x()+100+ (offset_weight*100), rect().y(), 100, 50, text);
     scene->addItem(sibling);
 
     scene->addLine(rect().x()+100, rect().y()+25, sibling->rect().x(), sibling->rect().y()+25, QPen(Qt::black)); // Root to Child1
@@ -45,7 +45,7 @@ NonTerminalNode *NonTerminalNode::addNonTerminalChild(QGraphicsScene* scene, QSt
     scene->addItem(newChild);
 
     scene->addLine(rect().x()+50, rect().y()+50, newChild->rect().x()+50, newChild->rect().y(), QPen(Qt::black)); // Root to Child1
-    lastChild+=100;
+    lastChild+=200;
     return newChild;
 }
 
@@ -55,7 +55,7 @@ TerminalNode *NonTerminalNode::addTerminalChild(QGraphicsScene *scene, QString t
     scene->addItem(child);
 
     scene->addLine(rect().x()+50, rect().y()+50, child->rect().x()+30, child->rect().y(), QPen(Qt::black));
-    lastChild +=100;
+    lastChild +=200;
 
     return child;
 }

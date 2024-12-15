@@ -23,12 +23,13 @@ public:
 
     void test_nodes(QGraphicsScene *scene, bool test=true);
 
-    void traverse_parse_tree(Node *node, QGraphicsScene* scene, NonTerminalNode *nt, TerminalNode *t);
+    void traverse_parse_tree(Node *node, QGraphicsScene* scene, NonTerminalNode *nt, TerminalNode *t, int counter);
 
 public slots:
     void on_actioncompile_new_file_triggered();
 
 private:
     Ui::MainWindow *ui;
+    QGraphicsScene* scene;
 };
 #endif // MAINWINDOW_H

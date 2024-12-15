@@ -14,7 +14,7 @@ TerminalNode::TerminalNode(qreal x, qreal y, qreal radius, QString text)
     // Center the text within the ellipse
     qreal textWidth = textItem->boundingRect().width();
     qreal textHeight = textItem->boundingRect().height();
-    textItem->setPos(x + (textWidth/2) ,y + (textHeight/2));
+    textItem->setPos(x + (((radius*2)-textWidth)/2) ,y + (textHeight/2));
 }
 
 
