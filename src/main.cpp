@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,16 +12,23 @@ int main(int argc, char** argv) {
         return 1;
     }
     if (open_compilation(argv[1]) !=  0) {
-        print_error();
+        const char* error = get_error_string();
+        printf("%s\n", error);
         return 1;
     }
     Token* tokens = tokenize();
     if (tokens == NULL) {
-        print_error();
+        const char* error = get_error_string();
+        printf("%s\n", error);
         return 1;
     }
 
     size_t token_count = get_token_count();
+    for (size_t i = 0; i < token_count; i++)
+    {
+        print_token(&tokens[i]);
+    }
+
     Parser parser;
     parser.setTokensList(tokens, token_count);
     parser.run();

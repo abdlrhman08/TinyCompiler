@@ -20,9 +20,14 @@
             extensions = [ "rust-src" ];
           })
 
+          libsForQt5.qwt
+          libsForQt5.qt5.qtbase
+
           gdb
           cmake
         ];
+
+        QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.libsForQt5.qt5.qtbase.bin}/lib/qt-${pkgs.libsForQt5.qt5.qtbase.version}/plugins";
       };
     };
 }

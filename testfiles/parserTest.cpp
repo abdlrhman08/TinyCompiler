@@ -344,8 +344,8 @@ void Parser::createEdgesTable(Node* node) {
 void Parser::run() {
     cout << "Running parser..." << endl; // Debugging statement
     parse_tree = stmtSequence();
-    createNodesTable(parse_tree);
-    createEdgesTable(parse_tree);
+    //createNodesTable(parse_tree);
+    //createEdgesTable(parse_tree);
     cout << "Finished parsing" << endl; // Debugging statement
 }
 
@@ -385,18 +385,46 @@ void Parser::printParseTree(Node* node, int depth) {
 int main(int argc, char** argv) {
     // use static data token to test parser
     const vector<Token> tokens = {
-        {TokenType::READ, "read", 0},
-        {TokenType::IDENTIFIER, "x", 0},
+        {TokenType::IF, "if", 0},
+        {TokenType::IDENTIFIER, "a", 0},
+        {TokenType::LESSTHAN, "<", 0},
+        {TokenType::LESSTHAN, "<", 0},
+        {TokenType::NUMBER, "10", 10},
+        {TokenType::THEN, "then", 0},
+        {TokenType::IDENTIFIER, "b", 0},
+        {TokenType::ASSIGN, ":=", 0},
+        {TokenType::NUMBER, "1", 1},
         {TokenType::SEMICOLON, ";", 0},
+        {TokenType::IF, "if", 0},
+        {TokenType::IDENTIFIER, "c", 0},
+        {TokenType::LESSTHAN, "<", 0},
+        {TokenType::NUMBER, "20", 20},
+        {TokenType::THEN, "then", 0},
+        {TokenType::IDENTIFIER, "d", 0},
+        {TokenType::ASSIGN, ":=", 0},
+        {TokenType::IDENTIFIER, "b", 0},
+        {TokenType::PLUS, "+", 0},
+        {TokenType::NUMBER, "2", 2},
+        {TokenType::SEMICOLON, ";", 0},
+        {TokenType::READ, "read", 0}, // Adding the READ token
+        {TokenType::IDENTIFIER, "x", 0}, // Example identifier to be read
+        {TokenType::SEMICOLON, ";", 0}, // Semicolon after read statement
+        {TokenType::END, "end", 0},
+        {TokenType::ELSE, "else", 0},
+        {TokenType::IDENTIFIER, "d", 0},
+        {TokenType::ASSIGN, ":=", 0},
+        {TokenType::NUMBER, "0", 0},
+        {TokenType::SEMICOLON, ";", 0},
+        {TokenType::END, "end", 0},
     };
 
 
     Parser parser;
     parser.setTokensList(tokens);
     parser.run();
-    parser.outputTables();
+    //parser.outputTables();
     parser.printParseTree(parser.parse_tree, 0);
-    parser.clearTables();
+    //parser.clearTables();
 
     return 0;
 }

@@ -49,7 +49,6 @@ bool Parser::match(int expected_type) {
 
 Node* Parser::statement() {
     Node* t = nullptr;
-    cout << token.string_val << endl;
     if (token.token_type == TokenType::IF) {
         t = ifStmt();
     } else if (token.token_type == TokenType::REPEAT) {
@@ -67,24 +66,36 @@ Node* Parser::statement() {
 }
 
 Node* Parser::stmtSequence() {
+    cout << "Entering stmtSequence()" << endl;
     vector<Node*> stmts;
 
     while (token.token_type != TokenType::END && token.token_type != TokenType::ELSE && token.token_type != TokenType::UNTIL) {
-        Node* t = statement();
+        Node* t = statement(); // Attempt to parse a single statement
+
         if (t != nullptr) {
-            stmts.push_back(t);
+            stmts.push_back(t); // Add the valid statement to the list
         }
 
+        // Check if the next token is a semicolon
         if (token.token_type == TokenType::SEMICOLON) {
-            match(TokenType::SEMICOLON);
-        } else {
-            break;
+            match(TokenType::SEMICOLON); // Consume the semicolon
+            cout << "Matched semicolon." << endl; // Debugging output
         }
+
+        if (token.token_type != TokenType::IDENTIFIER &&
+            token.token_type != TokenType::READ &&
+            token.token_type != TokenType::WRITE &&
+            token.token_type != TokenType::IF &&
+            token.token_type != TokenType::REPEAT &&
+            token.token_type != TokenType::END) {
+            break;
+            }
     }
 
     Node* stmt_seq = new Node("stmt_sequence", "", "ellipse");
     stmt_seq->setChildren(stmts);
 
+    cout << "Exiting stmtSequence()" << endl;
     return stmt_seq;
 }
 
@@ -211,42 +222,64 @@ Node* Parser::writeStmt() {
 }
 
 void Parser::createNodesTable(Node* node) {
-    if (node == nullptr) {
-        if (parse_tree == nullptr) {
-            return;
-        }
-        node = parse_tree;
+    if (node == nullptr) { // Check for null node
+        cerr << "Error: Null node encountered in createNodesTable." << endl;
+        return;
     }
 
+    // Debug: Print the node being processed
+    cout << "Processing node with value: " << node->token_value
+         << ", code: " << node->code_value
+         << ", shape: " << node->shape
+         << endl;
+
+    // Assign index if it doesn't exist
     if (node->index == -1) {
-        node->index = nodes_table.size();
+        node->index = nodes_table.size(); // Assign a new index
         nodes_table[node->index] = {node->token_value, node->code_value, node->shape};
     }
 
+    // Debug: Print table size after insertion
+    cout << "Nodes table size: " << nodes_table.size() << endl;
+
+    // Process children
     for (auto child : node->children) {
-        if (child != nullptr) {
-            createNodesTable(child);
+        if (child == nullptr) {
+            continue;
         }
+        createNodesTable(child);
     }
 
+    // Process sibling
     if (node->sibling != nullptr) {
         createNodesTable(node->sibling);
     }
 }
-
-
 void Parser::createEdgesTable(Node* node) {
     if (node == nullptr) {
-        node = parse_tree;
+        if (parse_tree == nullptr) {
+            cerr << "Error: Parse tree is not initialized." << endl;
+            return;
+        }
+        node = parse_tree; // Start from the root of the parse tree
     }
+
+    cout << "Processing node index: " << node->index << endl;
+
+    // Process children
     for (auto child : node->children) {
-        std::cout << "Current CHild: " <<child << " Current node: " << node << std::endl;
-        edges_table.emplace_back(node->index, child->index);
-        createEdgesTable(child);
+        if (child != nullptr) {
+            cout << "Adding edge: (" << node->index << ", " << child->index << ")" << endl;
+            edges_table.emplace_back(node->index, child->index); // Add edge from current node to child
+            createEdgesTable(child); // Recur on child
+        }
     }
+
+    // Process sibling
     if (node->sibling != nullptr) {
-        edges_table.emplace_back(node->index, node->sibling->index);
-        createEdgesTable(node->sibling);
+        cout << "Adding edge: (" << node->index << ", " << node->sibling->index << ")" << endl;
+        edges_table.emplace_back(node->index, node->sibling->index); // Add edge from current node to sibling
+        createEdgesTable(node->sibling); // Recur on sibling
     }
 }
 

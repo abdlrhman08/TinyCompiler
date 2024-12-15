@@ -1,6 +1,6 @@
 use std::{
     collections::HashSet,
-    io::Read,
+    io::{Read, Write},
     fs::File,
     ffi::{c_char, CStr, CString}
 };
@@ -19,7 +19,6 @@ pub enum TokenType {
     READ,
     WRITE,
     LESSTHAN,
-    BIGGERTHAN,
     EQUAL,
     PLUS,
     MINUS,
@@ -28,7 +27,6 @@ pub enum TokenType {
     OPENBRACKET,
     CLOSEDBRACKET,
     NUMBER,
-    UNKNOWN,
     ELSE,
 }
 
@@ -104,20 +102,7 @@ impl Tokenizer {
             self.current_pos += 1;
         }
         
-        // Check if the number is immediately followed by letters
         if start != self.current_pos {    
-            if self.current_pos < self.input.len() {
-                let next_char = self.input.chars().nth(self.current_pos).unwrap();
-                if next_char.is_alphabetic() {
-                    let invalid_token = &self.input[start..];
-                    let end = invalid_token.find(|c: char| !c.is_alphanumeric())
-                        .unwrap_or(invalid_token.len());
-                    return Err(TokenizerError::InvalidIdentifier(
-                        invalid_token[..end].to_string()
-                    ));
-                }
-            }
-
             let num_str = &self.input[start..self.current_pos];
             return Ok(Some(Token {
                 token_type: TokenType::NUMBER,
@@ -139,7 +124,7 @@ impl Tokenizer {
         let mut end_pos = self.current_pos;
         while end_pos < self.input.len() {
             let ch = self.input.chars().nth(end_pos).unwrap();
-            if !ch.is_alphabetic() && !ch.is_digit(10) {
+            if !ch.is_alphabetic() {
                 break;
             }
             end_pos += 1;
@@ -148,15 +133,10 @@ impl Tokenizer {
         if start != end_pos {
             let id_str = &self.input[start..end_pos];
             
-            // Check if identifier contains numbers in the middle
-            let has_digits = id_str.chars().any(|c| c.is_digit(10));
-            if has_digits {
-                return Err(TokenizerError::InvalidIdentifier(id_str.to_string()));
-            }
-
             let token_type = match id_str {
                 "if" => TokenType::IF,
                 "then" => TokenType::THEN,
+                "else" => TokenType::ELSE,
                 "end" => TokenType::END,
                 "repeat" => TokenType::REPEAT,
                 "until" => TokenType::UNTIL,
@@ -194,7 +174,6 @@ impl Tokenizer {
         let token_type = match ch {
             ';' => TokenType::SEMICOLON,
             '<' => TokenType::LESSTHAN,
-            '>' => TokenType::BIGGERTHAN,
             '=' => TokenType::EQUAL,
             '+' => TokenType::PLUS,
             '-' => TokenType::MINUS,
@@ -286,6 +265,7 @@ impl CompilationUnit {
     }
 
     fn tokenize(&mut self) {
+        let parsed_out = File::create("parsed.txt");
         let tokens = self.tokenizer
             .as_mut()
             .expect("Tokenizer not initialized")
@@ -294,17 +274,29 @@ impl CompilationUnit {
         match tokens {
             Ok(tokens) => {
                 self.identified_tokens = tokens.len();
+                if let Ok(mut out_file) = parsed_out {
+                    println!("Writing to output file");
+                    for token in tokens.iter() {
+                        writeln!(out_file, "{}", token);
+                    }
+                } else {
+                    println!("Could not open a file to write, skipping..");
+                }
                 unsafe { TOKENS = Some(tokens.into_boxed_slice())};
             },
             Err(e) => {
-                unsafe { ERROR_STRING = Some(format!("Error during tokenization: {:?}", e))}
+                unsafe {
+                    ERROR_STRING = Some(
+                        CString::new(format!("Error during tokenization: {:?}", e)).unwrap()
+                    )
+                }
             }
         }
     }
 }
 
 static mut COMPILATION_UNIT: Option<CompilationUnit> = None;
-static mut ERROR_STRING: Option<String> = None;
+static mut ERROR_STRING: Option<CString> = None;
 static mut TOKENS: Option<Box<[Token]>> = None;
 
 #[no_mangle]
@@ -317,14 +309,12 @@ pub extern "C" fn open_compilation(file_name: *const c_char) -> u8 {
         let file_name = CStr::from_ptr(file_name).to_str().unwrap();
         match CompilationUnit::open(file_name) {
             Err(e) => {
-                ERROR_STRING = Some(e.to_string());
+                ERROR_STRING = Some(CString::new(e).unwrap());
                 1
             }
             Ok(c) => {
-                if COMPILATION_UNIT.is_none() {
-                    COMPILATION_UNIT = Some(c);
-                };
-                0
+                COMPILATION_UNIT = Some(c);
+                0 
             }
         }
     }
@@ -357,12 +347,21 @@ pub extern "C" fn print_token(token: *mut Token) {
     unsafe { println!("{}", *token) };
 }
 
+#[no_mangle]
+pub extern "C" fn get_error_string() -> *const c_char {
+    unsafe {
+        match ERROR_STRING {
+            Some(ref err) => err.as_ptr(),
+            None => std::ptr::null()
+        }
+    }
+}
 
 #[no_mangle]
 pub extern "C" fn print_error() {
     unsafe {
         match ERROR_STRING {
-            Some(ref err) => println!("Error: {}", err),
+            Some(ref err) => println!("Error: {}", err.to_str().unwrap()),
             None => println!("No error occured")
         }
     }
