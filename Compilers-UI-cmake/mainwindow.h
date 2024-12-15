@@ -20,6 +20,9 @@ public:
 
     void test_nodes(QGraphicsScene *scene, bool test=true);
 
+public slots:
+    void on_actioncompile_new_file_triggered();
+
 private:
     Ui::MainWindow *ui;
 };

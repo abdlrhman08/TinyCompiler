@@ -10,12 +10,16 @@
 #include <iostream>
 #include "scanner.h"
 #include "parser.h"
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    // //connect compile new file action
+    // connect(ui->actioncompile_new_file, &QAction::triggered, this, &MainWindow::on_actioncompile_new_file_triggered);
 
     // Create a graphics scene and view
     QGraphicsScene* scene = new QGraphicsScene(this);
@@ -47,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
     // parser.setTokensList(tokens, token_count);
     // parser.run();
     // parser.printParseTree(parser.parse_tree, 0);
+
     // parser.clearTables();
 
 
@@ -80,5 +85,22 @@ void MainWindow::test_nodes(QGraphicsScene* scene, bool test)
         terminalChild->addChild(scene, "id\n test");
         terminalChild->addChild(scene, "id\n test");
         terminalChild->addChild(scene, "id\n test");
+    }
+}
+
+void MainWindow::on_actioncompile_new_file_triggered(){
+    // Open a file dialog with a filter for .tiny files
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "Open Tiny File",          // Dialog title
+        "",                        // Default directory
+        "Tiny Files (*.tiny)"      // File filter
+    );
+
+    // Check if a file was selected
+    if (!filePath.isEmpty()) {
+        std::cout << "Selected file: " << filePath.toStdString() << std::endl;
+    } else {
+        std::cout<< "No file selected.";
     }
 }
