@@ -117,7 +117,7 @@ void MainWindow::on_actioncompile_new_file_triggered(){
     if (!filePath.isEmpty()) {
         //parser.clearTables();
         std::cout << "Selected file: " << filePath.toStdString() << std::endl;
-        if (open_compilation("test-tiny.tiny") != 0)
+        if (open_compilation(filePath.toStdString().c_str()) != 0)
         {
             //get_error_string()
             print_error();
