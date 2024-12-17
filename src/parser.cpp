@@ -254,38 +254,6 @@ Node* Parser::exp() {
     return left;
 }
 
-Node* Parser::ifStmt() {
-    cout << "Entering ifStmt()" << endl;
-
-    Node* ifNode = new Node("ifStmt", "", "rectangle");
-
-    match(TokenType::IF);
-    Node* condition = exp();
-
-    match(TokenType::THEN);
-    Node* stmtSeq = stmtSequence();
-
-    vector<Node*> children = {condition, stmtSeq};
-
-    if (token.token_type == TokenType::ELSE) {
-        match(TokenType::ELSE);
-        Node* elseStmtSeq = stmtSequence();
-        children.push_back(elseStmtSeq);
-    }
-
-    if (token.token_type == TokenType::END) {
-        match(TokenType::END);
-    } else {
-        cerr << "Syntax Error: Expected 'END' after if statement." << endl;
-        return nullptr;
-    }
-
-    // Set children
-    ifNode->setChildren(children);
-
-    cout << "Exiting ifStmt()" << endl;
-    return ifNode;
-}
 
 Node* Parser::repeatStmt() {
     // Create the root node for the repeat statement
