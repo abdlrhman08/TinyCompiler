@@ -3,6 +3,7 @@
 
 NonTerminalNode::NonTerminalNode(qreal x, qreal y, qreal width, qreal height, QString text)
     : QGraphicsRectItem(x,y,width, height){
+    setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
     setBrush(QBrush(Qt::white));
     setPen(QPen(Qt::blue));
     // Add text item as a child
@@ -31,7 +32,7 @@ void NonTerminalNode::addChild(QGraphicsItem *child)
 
 NonTerminalNode* NonTerminalNode::addSibling(QGraphicsScene* scene, QString text, int offset_weight)
 {
-    NonTerminalNode* sibling = new NonTerminalNode(rect().x()+100+ (offset_weight*100), rect().y(), 100, 50, text);
+    NonTerminalNode* sibling = new NonTerminalNode(rect().x()+400+ (offset_weight*100), rect().y(), 100, 50, text);
     scene->addItem(sibling);
 
     scene->addLine(rect().x()+100, rect().y()+25, sibling->rect().x(), sibling->rect().y()+25, QPen(Qt::black)); // Root to Child1
@@ -45,7 +46,7 @@ NonTerminalNode *NonTerminalNode::addNonTerminalChild(QGraphicsScene* scene, QSt
     scene->addItem(newChild);
 
     scene->addLine(rect().x()+50, rect().y()+50, newChild->rect().x()+50, newChild->rect().y(), QPen(Qt::black)); // Root to Child1
-    lastChild+=200;
+    lastChild+=400;
     return newChild;
 }
 
@@ -55,7 +56,7 @@ TerminalNode *NonTerminalNode::addTerminalChild(QGraphicsScene *scene, QString t
     scene->addItem(child);
 
     scene->addLine(rect().x()+50, rect().y()+50, child->rect().x()+30, child->rect().y(), QPen(Qt::black));
-    lastChild +=200;
+    lastChild +=400;
 
     return child;
 }

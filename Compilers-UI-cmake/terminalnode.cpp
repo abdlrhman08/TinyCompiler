@@ -2,6 +2,7 @@
 
 TerminalNode::TerminalNode(qreal x, qreal y, qreal radius, QString text)
     : QGraphicsEllipseItem(x, y, radius * 2, radius * 2) {
+    setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
     std::cout<<"inside constructor"<<std::endl;
     setBrush(QBrush(Qt::white));
     setPen(QPen(Qt::blue));
