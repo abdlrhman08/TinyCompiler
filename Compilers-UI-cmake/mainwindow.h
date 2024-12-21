@@ -31,5 +31,6 @@ public slots:
 private:
     Ui::MainWindow *ui;
     QGraphicsScene* scene;
+    bool parsingError=false;
 };
 #endif // MAINWINDOW_H

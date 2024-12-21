@@ -97,6 +97,7 @@ void MainWindow::traverse_parse_tree(Node* node, QGraphicsScene *scene, NonTermi
     if (node->sibling != nullptr){
         if (node->sibling->token_value == "SYNTAX_ERROR"){
             QMessageBox::warning(nullptr, "Warning", "Syntax error");
+            parsingError=true;
         }
 
         NonTerminalNode* sibling = nt->addSibling(scene, QString::fromStdString(node->sibling->token_value), counter);
@@ -136,6 +137,10 @@ void MainWindow::on_actioncompile_new_file_triggered(){
         NonTerminalNode* root = new NonTerminalNode(120, 120, 100, 50, QString::fromStdString(parser.parse_tree->token_value));
         scene->addItem(root);
         traverse_parse_tree(parser.parse_tree, scene, root, nullptr, 1);
+        if(parsingError){
+            scene->clear();
+            parsingError=false;
+        }
         parser.clearTables();
     } else {
         std::cout<< "No file selected.";
