@@ -113,6 +113,7 @@ void MainWindow::on_actioncompile_new_file_triggered(){
         "",                        // Default directory
         "Tiny Files (*.tiny)"      // File filter
     );
+    scene->clear();
 
     // Check if a file was selected
     if (!filePath.isEmpty()) {
