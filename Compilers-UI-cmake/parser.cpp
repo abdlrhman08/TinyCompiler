@@ -65,7 +65,7 @@ void Parser::setTokensList(Token* tok_list, size_t num) {
 }
 
 bool Parser::nextToken() {
-    if (tmp_index < tokens_num) {
+    if (tmp_index < tokens_num - 1) {
         tmp_index++;
         token = tokens_list[tmp_index];
         return true;
@@ -119,41 +119,41 @@ Node* Parser::stmtSequence() {
         return temp;
     }
     Node* first = temp;
-    while (token.token_type != TokenType::END && token.token_type != TokenType::ELSE && token.token_type != TokenType::UNTIL) {
-        if(!match(TokenType::SEMICOLON)) {
-            temp->sibling = new Node("SYNTAX_ERROR", "SE", "rectangle");
-            break;
+    if (tmp_index < tokens_num - 1) {
+        while (token.token_type == TokenType::SEMICOLON) {
+                match(TokenType::SEMICOLON);
+                Node* t = statement(); // Attempt to parse a single statement
+
+                //if (t != nullptr) {
+                //    stmts.push_back(t); // Add the valid statement to the list
+                //}
+
+                if (t == nullptr) {
+                    cerr << "Warning: Empty or invalid statement in stmtSequence." << endl;
+                    t = new Node("SYNTAX_ERROR", "SE", "rectangle");
+                    temp->sibling = t;
+                    break;
+                }
+
+                // Check if the next token is a semicolon
+                //if (token.token_type == TokenType::SEMICOLON) {
+                //    match(TokenType::SEMICOLON); // Consume the semicolon
+                //    cout << "Matched semicolon." << endl; // Debugging output
+                //}
+
+                //if (token.token_type != TokenType::IDENTIFIER &&
+                //    token.token_type != TokenType::READ &&
+                //    token.token_type != TokenType::WRITE &&
+                //    token.token_type != TokenType::IF &&
+                //    token.token_type != TokenType::REPEAT &&
+                //    token.token_type != TokenType::END) {
+                //    break;
+                //    }
+                temp->sibling = t;
+                temp = t;
         }
-        Node* t = statement(); // Attempt to parse a single statement
-
-        //if (t != nullptr) {
-        //    stmts.push_back(t); // Add the valid statement to the list
-        //}
-
-        if (t == nullptr) {
-            cerr << "Warning: Empty or invalid statement in stmtSequence." << endl;
-            t = new Node("SYNTAX_ERROR", "SE", "rectangle");
-            temp->sibling = t;
-            break;
-        }
-
-        // Check if the next token is a semicolon
-        //if (token.token_type == TokenType::SEMICOLON) {
-        //    match(TokenType::SEMICOLON); // Consume the semicolon
-        //    cout << "Matched semicolon." << endl; // Debugging output
-        //}
-
-        //if (token.token_type != TokenType::IDENTIFIER &&
-        //    token.token_type != TokenType::READ &&
-        //    token.token_type != TokenType::WRITE &&
-        //    token.token_type != TokenType::IF &&
-        //    token.token_type != TokenType::REPEAT &&
-        //    token.token_type != TokenType::END) {
-        //    break;
-        //    }
-        temp->sibling = t;
-        temp = t;
     }
+
 
     //Node* stmt_seq = new Node("stmt_sequence", "", "rectangle");
     //stmt_seq->setChildren(stmts);
@@ -442,6 +442,10 @@ void Parser::run() {
     if (parse_tree == nullptr) {
         cerr << "Error: Failed to parse input." << endl;
         return;
+    }
+    std::cout << tmp_index << " indices " << tokens_num << "total" << std::endl;
+    if (tmp_index < tokens_num - 1) {
+        parse_tree->setSibling(new Node("SYNTAX_ERROR", "", "rectangle"));
     }
     createNodesTable(parse_tree);
     createEdgesTable(parse_tree);
